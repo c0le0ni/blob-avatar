@@ -71,7 +71,7 @@ export const DEFAULT_STATE: BlobState = {
     { anim: 'idle', dur: 2.4 },
     { anim: 'jelly', dur: 1.4 },
   ],
-  bg: { kind: 'none', c1: '#0a0a0a', c2: '#1f1f1f', angle: 135 },
+  bg: { kind: 'none', c1: '#f3eee4', c2: '#cfe3ff', angle: 135 },
   seed: 1,
 };
 
