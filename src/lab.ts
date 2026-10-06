@@ -57,3 +57,13 @@ if (strip) {
   section(strip, items);
   live.forEach((l, i) => l.svg.update(frame(l.state, (i * dur) / n)));
 }
+
+// ?wordmark shows the logo big, on dark and light, for checking and exporting
+import { wordmarkSvg } from './brand';
+if (params.has('wordmark')) {
+  root.innerHTML = `<div id="wm" style="display:grid;gap:24px;padding:24px">
+    <div style="background:#0a0a0a;padding:40px;border:1px solid #222">${wordmarkSvg({ height: 120 })}</div>
+    <div style="background:#f3eee4;padding:40px">${wordmarkSvg({ height: 120, letters: '#161616' })}</div>
+    <div style="background:#0a0a0a;padding:20px">${wordmarkSvg({ height: 28 })}</div>
+  </div>`;
+}
