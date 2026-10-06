@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed test</title>
+<link rel="stylesheet" href="/embed-test.css">
+<script src="/dist/embed.js" defer></script>
+</head>
+<body>
+<!-- Dev-only: <blob-avatar> under a strict CSP. Build the embed first (npm run build). -->
+<blob-avatar></blob-avatar>
+<blob-avatar shape="ghost" color="#8a6cff" eyes="pixel" expression="happy" animation="float.3,spin.1.4" gaze size="120"></blob-avatar>
+<blob-avatar state="v=1&shape=star&color=ffd23f&eyes=dot&mode=hole&eyec=auto&expr=starry&anim=excited.1.6,idle.2&bg=linear.101820.2a1f4d.135&seed=7" size="96"></blob-avatar>
+<blob-avatar shape="block" color="#f3eee4" eyes="heart" expression="love" animation="love.2.4" paused></blob-avatar>
+</body>
+</html>

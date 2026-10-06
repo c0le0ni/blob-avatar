@@ -70,3 +70,22 @@ export function animateWordmark(host: Element) {
     eyes.forEach((e, i) => e.setAttribute('d', toPath(m.eyes[i].c)));
   };
 }
+
+/** the mini blob alone, in a square box (favicon, avatars of the project itself) */
+export function markSvg(opt: { color?: string; size?: number } = {}): string {
+  const s: BlobState = { ...WORDMARK_STATE, color: opt.color ?? WORDMARK_STATE.color };
+  const m = frame(s, 0, { still: true, gaze: [0, 0] });
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < m.body.c.x.length; i++) {
+    x0 = Math.min(x0, m.body.c.x[i]);
+    x1 = Math.max(x1, m.body.c.x[i]);
+    y0 = Math.min(y0, m.body.c.y[i]);
+    y1 = Math.max(y1, m.body.c.y[i]);
+  }
+  const side = Math.max(x1 - x0, y1 - y0);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  const vb = [cx - side / 2, cy - side / 2, side, side].map((v) => Math.round(v * 10) / 10).join(' ');
+  const eyes = m.eyes.map((e) => `<path d="${toPath(e.c)}" fill="${e.fill}"/>`).join('');
+  const size = opt.size ?? 512;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${size}" height="${size}"><path d="${toPath(m.body.c)}" fill="${s.color}"/>${eyes}</svg>`;
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://blob.coleoni.com/sitemap.xml

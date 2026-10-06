@@ -1,0 +1,16 @@
+# On the server: Nginx Proxy Manager sits on gantivo-network and reaches this
+# container by name (coleoni-blob, port 80). No port is opened on the machine;
+# TLS for blob.coleoni.com ends at the proxy.
+services:
+  blob:
+    build: .
+    image: coleoni-blob:latest
+    container_name: coleoni-blob
+    restart: unless-stopped
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: gantivo-network
