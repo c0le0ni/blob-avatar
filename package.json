@@ -1,0 +1,20 @@
+{
+  "name": "blob-avatar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Build your own animated blob avatar. A free product by Coleoni.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --port 5320 --strictPort",
+    "build": "vite build && vite build --config vite.embed.config.ts",
+    "preview": "vite preview --port 5321",
+    "test": "vitest run",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^3.2.7"
+  }
+}
