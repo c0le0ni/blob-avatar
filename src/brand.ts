@@ -89,3 +89,23 @@ export function markSvg(opt: { color?: string; size?: number } = {}): string {
   const size = opt.size ?? 512;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${size}" height="${size}"><path d="${toPath(m.body.c)}" fill="${s.color}"/>${eyes}</svg>`;
 }
+
+/** a row of still blobs, for product cards (coleoni.com) and the README */
+export function stripSvg(height = 64): string {
+  const looks: Partial<BlobState>[] = [
+    { shape: 'bean', color: '#aefa0e', eyes: 'block', expression: 'neutral' },
+    { shape: 'ghost', color: '#8a6cff', eyes: 'pixel', expression: 'happy' },
+    { shape: 'star', color: '#ffd23f', eyes: 'dot', expression: 'starry' },
+    { shape: 'orb', color: '#ff6a5c', eyes: 'pill', expression: 'smug' },
+    { shape: 'puff', color: '#4ea3ff', eyes: 'oval', expression: 'sleepy' },
+    { shape: 'block', color: '#f3eee4', eyes: 'block', expression: 'love' },
+  ];
+  const cell = 130;
+  const parts = looks.map((l, i) => {
+    const m = frame({ ...WORDMARK_STATE, eyes: 'block', ...l }, 0, { still: true, gaze: [0, 0] });
+    const layers = [`<path d="${toPath(m.body.c)}" fill="${m.body.fill}"/>`, ...[...m.cheeks, ...m.eyes].filter((c) => c.alpha > 0).map((c) => `<path d="${toPath(c.c)}" fill="${c.fill}"${c.alpha < 0.999 ? ` fill-opacity="${Math.round(c.alpha * 100) / 100}"` : ''}/>`)];
+    return `<g transform="translate(${i * cell + cell / 2} 58)">${layers.join('')}</g>`;
+  });
+  const w = looks.length * cell;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 130" width="${Math.round((height * w) / 130)}" height="${height}" role="img" aria-label="Six blob avatars">${parts.join('')}</svg>`;
+}

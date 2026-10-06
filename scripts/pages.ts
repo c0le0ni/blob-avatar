@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_STATE } from '../src/engine';
 import { page } from '../src/app/markup';
 import { STRINGS } from '../src/i18n/strings';
-import { markSvg, wordmarkSvg } from '../src/brand';
+import { markSvg, stripSvg, wordmarkSvg } from '../src/brand';
 
 /** one page for both languages: nginx serves it for any missing path */
 function notFound() {
@@ -51,6 +51,7 @@ const out = [
   ['public/brand/blob.svg', wordmarkSvg({ height: 64 })],
   ['public/brand/blob-dark.svg', wordmarkSvg({ height: 64, letters: '#161616' })],
   ['public/brand/mark.svg', markSvg()],
+  ['public/brand/strip.svg', stripSvg()],
   ['public/404.html', notFound()],
 ] as const;
 
