@@ -5,12 +5,13 @@
 import type { Contour } from '../engine/contour';
 import { frame, VIEW, type RenderModel } from '../engine/frame';
 import { loopLength, type BlobState } from '../engine/state';
-import { bgMarkup } from '../render/svg';
 
 export interface AnimatedSvgOptions {
   /** pixel size of the square output */
   size?: number;
-  circle?: boolean;
+  /** a solid background, or none */
+  bg?: string | null;
+  round?: boolean;
   /** frames sampled per second before pruning */
   fps?: number;
   /** how far (in drawing units, out of 200) a dropped frame may be from the line */
@@ -22,9 +23,11 @@ interface Track {
   pts: Float64Array[];
   /** per frame: how many points each contour has, to rebuild the path */
   shape: number[];
+  /** fill color, or stroke color for a trail */
   fill: string[];
   alpha: number[];
-  rule?: string;
+  /** a trail: an open stroked line of this width */
+  stroke?: number;
 }
 
 const flat = (cs: Contour[]) => {
@@ -74,10 +77,24 @@ function pathOf(p: Float64Array, shape: number[]): string {
   return d;
 }
 
+/** an open line through the points, in the same compact form */
+function openPathOf(p: Float64Array): string {
+  const n = p.length / 2;
+  const r = (v: number) => Math.round(v * 10);
+  const x = (i: number) => p[2 * Math.max(0, Math.min(n - 1, i))];
+  const y = (i: number) => p[2 * Math.max(0, Math.min(n - 1, i)) + 1];
+  const nums: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const sx = r(x(i)), sy = r(y(i));
+    nums.push(r(x(i) + (x(i + 1) - x(i - 1)) / 6) - sx, r(y(i) + (y(i + 1) - y(i - 1)) / 6) - sy, r(x(i + 1) - (x(i + 2) - x(i)) / 6) - sx, r(y(i + 1) - (y(i + 2) - y(i)) / 6) - sy, r(x(i + 1)) - sx, r(y(i + 1)) - sy);
+  }
+  return `M${join([r(x(0)), r(y(0))])}c${join(nums)}`;
+}
+
 function tracks(models: RenderModel[]): Track[] {
-  const layer = (get: (m: RenderModel) => { cs: Contour[]; fill: string; alpha: number }, rule?: string): Track => {
+  const layer = (get: (m: RenderModel) => { cs: Contour[]; fill: string; alpha: number }, stroke?: number): Track => {
     const first = get(models[0]);
-    const t: Track = { pts: [], shape: first.cs.map((c) => c.x.length), fill: [], alpha: [], rule };
+    const t: Track = { pts: [], shape: first.cs.map((c) => c.x.length), fill: [], alpha: [], stroke };
     for (const m of models) {
       const l = get(m);
       t.pts.push(flat(l.cs));
@@ -103,12 +120,13 @@ function tracks(models: RenderModel[]): Track[] {
     }
     return t;
   };
-  const hole = models[0].holes.length > 0;
+  // the widest a trail gets in the loop: SMIL keeps a trail's width fixed
+  const width = (i: number) => Math.max(...models.map((m) => (m.trails[i].alpha > 0.002 ? m.trails[i].width : 0)));
   return [
-    layer((m) => ({ cs: [m.body.c, ...m.holes], fill: m.body.fill, alpha: 1 }), hole ? 'evenodd' : undefined),
-    ...[0, 1].map((i) => layer((m) => ({ cs: [m.cheeks[i].c], fill: m.cheeks[i].fill, alpha: m.cheeks[i].alpha }))),
+    ...models[0].trails.map((_, i) => layer((m) => ({ cs: [{ x: m.trails[i].x, y: m.trails[i].y }], fill: m.trails[i].color, alpha: m.trails[i].alpha }), width(i))),
+    layer((m) => ({ cs: [m.body.c], fill: m.body.fill, alpha: m.body.alpha })),
+    ...models[0].parts.map((_, i) => layer((m) => ({ cs: [m.parts[i].c], fill: m.parts[i].fill, alpha: m.parts[i].alpha }))),
     ...[0, 1].map((i) => layer((m) => ({ cs: [m.eyes[i].c], fill: m.eyes[i].fill, alpha: m.eyes[i].alpha }))),
-    ...models[0].decor.map((_, i) => layer((m) => ({ cs: [m.decor[i].c], fill: m.decor[i].fill, alpha: m.decor[i].alpha }))),
   ].filter((t) => t.alpha.some((a) => a > 0.001));
 }
 
@@ -138,7 +156,7 @@ export function keyframes(ts: Track[], tol: number): number[] {
   return keep;
 }
 
-/** the avatar's whole montage as one looping SVG */
+/** the avatar's whole cycle as one looping SVG */
 export function animatedSvg(state: BlobState, opt: AnimatedSvgOptions = {}): string {
   const L = loopLength(state) || 3;
   const fps = opt.fps ?? 24;
@@ -153,23 +171,24 @@ export function animatedSvg(state: BlobState, opt: AnimatedSvgOptions = {}): str
     `<animate attributeName="${attr}" dur="${dur}" repeatCount="indefinite"${discrete ? ' calcMode="discrete"' : ''} keyTimes="${keyTimes}" values="${values.join(';')}"/>`;
 
   const paths = ts.map((t) => {
-    const d = keep.map((i) => pathOf(t.pts[i], t.shape));
-    const fills = keep.map((i) => t.fill[i]);
+    const d = keep.map((i) => (t.stroke !== undefined ? openPathOf(t.pts[i]) : pathOf(t.pts[i], t.shape)));
+    const colors = keep.map((i) => t.fill[i]);
     const alphas = keep.map((i) => t.alpha[i]);
-    const fillConst = fills.every((f) => f === fills[0]);
+    const colorConst = colors.every((f) => f === colors[0]);
     const alphaConst = alphas.every((a) => a === alphas[0]);
-    const attrs = [`d="${d[0]}"`, `fill="${fills[0]}"`, t.rule ? `fill-rule="${t.rule}"` : '', !alphaConst || alphas[0] < 0.999 ? `fill-opacity="${alphas[0]}"` : ''].filter(Boolean).join(' ');
-    const anims = [anim('d', d), fillConst ? '' : anim('fill', fills, true), alphaConst ? '' : anim('fill-opacity', alphas.map(String))].join('');
+    const paint = t.stroke !== undefined ? 'stroke' : 'fill';
+    const look = t.stroke !== undefined ? `fill="none" stroke="${colors[0]}" stroke-width="${Math.round(t.stroke * 10) / 10}" stroke-linecap="round" stroke-linejoin="round"` : `fill="${colors[0]}"`;
+    const attrs = [`d="${d[0]}"`, look, !alphaConst || alphas[0] < 0.999 ? `${paint}-opacity="${alphas[0]}"` : ''].filter(Boolean).join(' ');
+    const anims = [anim('d', d), colorConst ? '' : anim(paint, colors, true), alphaConst ? '' : anim(`${paint}-opacity`, alphas.map(String))].join('');
     return `<path ${attrs}>${anims}</path>`;
   });
 
   const half = VIEW / 2;
   const s = opt.size ?? 512;
-  const bg = bgMarkup(state.bg, 'bg');
-  const clip = opt.circle ? `<clipPath id="round"><circle r="${half}"/></clipPath>` : '';
-  const defs = bg.defs || clip ? `<defs>${bg.defs}${clip}</defs>` : '';
-  const body = bg.rect + paths.join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${VIEW} ${VIEW}" width="${s}" height="${s}">${defs}${opt.circle ? `<g clip-path="url(#round)">${body}</g>` : body}</svg>`;
+  const bg = opt.bg ? `<rect x="${-half}" y="${-half}" width="${VIEW}" height="${VIEW}" fill="${opt.bg}"/>` : '';
+  const body = bg + paths.join('');
+  const round = opt.round ? `<defs><clipPath id="round"><circle r="${half}"/></clipPath></defs><g clip-path="url(#round)">${body}</g>` : body;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${VIEW} ${VIEW}" width="${s}" height="${s}">${round}</svg>`;
 }
 
 const num4 = (v: number) => String(Math.round(v * 10000) / 10000);

@@ -1,13 +1,12 @@
 // What an avatar is: everything a person picks, and nothing else. The whole avatar
-// fits in a short URL (see codec.ts) and the same state always draws the same blob.
+// fits in a short link (see codec.ts) and the same state always draws the same blob.
 
+import { ANIMS, DEFAULT_DUR, type Anim } from './animations';
 import { EXPRESSIONS, type Expression } from './face';
-import { EYES, type Eye } from './glyphs';
 import { SHAPES, type Shape } from './shapes';
-import { ANIMS, type Anim } from './animations';
 
-export { SHAPES, EYES, EXPRESSIONS, ANIMS };
-export type { Shape, Eye, Expression, Anim };
+export { SHAPES, EXPRESSIONS, ANIMS };
+export type { Shape, Expression, Anim };
 
 export interface Clip {
   anim: Anim;
@@ -15,66 +14,50 @@ export interface Clip {
   dur: number;
 }
 
-export interface Background {
-  kind: 'none' | 'solid' | 'linear';
-  c1: string;
-  c2: string;
-  /** degrees, for linear */
-  angle: number;
-}
-
 export interface BlobState {
-  v: 1;
+  v: 2;
   shape: Shape;
   /** body color, #rrggbb */
   color: string;
-  eyes: Eye;
-  /** eyes drawn on top of the body, or cut out of it */
-  eyeMode: 'ink' | 'hole';
-  /** #rrggbb, or 'auto' to read on any body */
-  eyeColor: string;
   expression: Expression;
-  seq: Clip[];
-  bg: Background;
+  /** the animations, in order: the cycle */
+  cycle: Clip[];
   seed: number;
 }
 
 /** the swatches offered in the app; any other color works too */
 export const PALETTE = [
+  { id: 'ink', hex: '#18181b' },
+  { id: 'brown', hex: '#8a5a3c' },
+  { id: 'red', hex: '#ef4444' },
+  { id: 'orange', hex: '#f28c28' },
+  { id: 'amber', hex: '#f5b400' },
   { id: 'lime', hex: '#aefa0e' },
-  { id: 'ink', hex: '#161616' },
-  { id: 'cream', hex: '#f3eee4' },
-  { id: 'coral', hex: '#ff6a5c' },
-  { id: 'tangerine', hex: '#ff9a3c' },
-  { id: 'sun', hex: '#ffd23f' },
-  { id: 'mint', hex: '#3ddc97' },
-  { id: 'teal', hex: '#17b3a3' },
-  { id: 'sky', hex: '#4ea3ff' },
-  { id: 'violet', hex: '#8a6cff' },
-  { id: 'pink', hex: '#ff7ac4' },
-  { id: 'stone', hex: '#9b9a93' },
+  { id: 'turquoise', hex: '#14b8a6' },
+  { id: 'blue', hex: '#3b82f6' },
+  { id: 'purple', hex: '#8b5cf6' },
+  { id: 'pink', hex: '#ec4899' },
+  { id: 'grey', hex: '#a1a1aa' },
+  { id: 'cream', hex: '#f1efe7' },
 ] as const;
 
-export const MAX_CLIPS = 8;
+export const MAX_CLIPS = 24;
+
+/** every animation once, in the order of the list */
+export const DEFAULT_CYCLE: Clip[] = ANIMS.map((anim) => ({ anim, dur: DEFAULT_DUR[anim] }));
+
+/** what the editor plays while you customize: just breathing and looking around */
+export const IDLE_CYCLE: Clip[] = [{ anim: 'idle', dur: 4.8 }];
 
 export const DEFAULT_STATE: BlobState = {
-  v: 1,
-  shape: 'bean',
+  v: 2,
+  shape: 'circle',
   color: '#aefa0e',
-  eyes: 'block',
-  eyeMode: 'ink',
-  eyeColor: 'auto',
   expression: 'neutral',
-  seq: [
-    { anim: 'idle', dur: 3 },
-    { anim: 'hop', dur: 1.6 },
-    { anim: 'idle', dur: 2.4 },
-    { anim: 'jelly', dur: 1.4 },
-  ],
-  bg: { kind: 'none', c1: '#f3eee4', c2: '#cfe3ff', angle: 135 },
+  cycle: DEFAULT_CYCLE,
   seed: 1,
 };
 
-export const cloneState = (s: BlobState): BlobState => ({ ...s, seq: s.seq.map((c) => ({ ...c })), bg: { ...s.bg } });
+export const cloneState = (s: BlobState): BlobState => ({ ...s, cycle: s.cycle.map((c) => ({ ...c })) });
 
-export const loopLength = (s: BlobState) => s.seq.reduce((n, c) => n + c.dur, 0);
+export const loopLength = (s: Pick<BlobState, 'cycle'>) => s.cycle.reduce((n, c) => n + c.dur, 0);

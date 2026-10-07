@@ -157,3 +157,18 @@ export function toCanvas(c: Contour, ctx: { moveTo(x: number, y: number): void; 
   }
   ctx.closePath();
 }
+
+/**
+ * An open line through every point, as smooth cubic curves (the ends use their own
+ * point as the missing neighbor). Always "M + (n-1) C", for stroked trails.
+ */
+export function toOpenPath(x: Float64Array, y: Float64Array): string {
+  const n = x.length;
+  const at = (i: number) => Math.max(0, Math.min(n - 1, i));
+  let d = `M${num(x[0])} ${num(y[0])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const a = at(i - 1), b = i + 1, c = at(i + 2);
+    d += `C${num(x[i] + (x[b] - x[a]) / 6)} ${num(y[i] + (y[b] - y[a]) / 6)} ${num(x[b] - (x[c] - x[i]) / 6)} ${num(y[b] - (y[c] - y[i]) / 6)} ${num(x[b])} ${num(y[b])}`;
+  }
+  return d;
+}

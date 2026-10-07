@@ -5,6 +5,15 @@ import { drawModel } from '../render/canvas';
 import { toSvgString } from '../render/svg';
 import { animatedSvg } from './smil';
 
+export interface ExportOptions {
+  /** PNG and GIF size in pixels */
+  size: number;
+  /** a solid background, or none (transparent) */
+  bg: string | null;
+  /** clip to a circle */
+  round: boolean;
+}
+
 const name = (s: BlobState, ext: string) => `blob-${s.shape}-${s.color.slice(1)}.${ext}`;
 
 function save(blob: Blob, filename: string) {
@@ -18,7 +27,7 @@ function save(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/** the rest pose: what a still picture should show */
+/** the rest pose: what a still picture shows */
 const still = (s: BlobState) => frame(s, 0, { still: true });
 
 function canvasOf(px: number) {
@@ -27,56 +36,57 @@ function canvasOf(px: number) {
   return c;
 }
 
-function pngBlob(s: BlobState, px: number, round: boolean): Promise<Blob> {
-  const c = canvasOf(px);
-  drawModel(c.getContext('2d')!, still(s), px, { circle: round });
+function pngBlob(s: BlobState, o: ExportOptions): Promise<Blob> {
+  const c = canvasOf(o.size);
+  drawModel(c.getContext('2d')!, still(s), o.size, o);
   return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'));
 }
 
-export async function downloadPng(s: BlobState, px: number, round: boolean) {
-  save(await pngBlob(s, px, round), name(s, 'png'));
+export async function downloadPng(s: BlobState, o: ExportOptions) {
+  save(await pngBlob(s, o), name(s, 'png'));
 }
 
-export async function copyPng(s: BlobState, px: number, round: boolean): Promise<boolean> {
+export async function copyPng(s: BlobState, o: ExportOptions): Promise<boolean> {
   try {
     // Safari wants the promise handed to ClipboardItem right away
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob(s, px, round) })]);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob(s, o) })]);
     return true;
   } catch {
     return false;
   }
 }
 
-const svgText = (s: BlobState, round: boolean) => toSvgString(still(s), { size: 512, circle: round });
+const svgText = (s: BlobState, o: ExportOptions) => toSvgString(still(s), { size: 512, bg: o.bg, round: o.round });
 
-export function downloadSvg(s: BlobState, round: boolean) {
-  save(new Blob([svgText(s, round)], { type: 'image/svg+xml' }), name(s, 'svg'));
+export function downloadSvg(s: BlobState, o: ExportOptions) {
+  save(new Blob([svgText(s, o)], { type: 'image/svg+xml' }), name(s, 'svg'));
 }
 
-export async function copySvg(s: BlobState, round: boolean): Promise<boolean> {
+export async function copySvg(s: BlobState, o: ExportOptions): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(svgText(s, round));
+    await navigator.clipboard.writeText(svgText(s, o));
     return true;
   } catch {
     return false;
   }
 }
 
-export async function downloadAnimatedSvg(s: BlobState, round: boolean) {
-  // let the button show its busy state before the work starts
+export async function downloadAnimatedSvg(s: BlobState, o: ExportOptions) {
+  // let the menu show its busy state before the work starts
   await new Promise((r) => setTimeout(r, 30));
-  save(new Blob([animatedSvg(s, { circle: round })], { type: 'image/svg+xml' }), name(s, 'animated.svg'));
+  save(new Blob([animatedSvg(s, { bg: o.bg, round: o.round })], { type: 'image/svg+xml' }), name(s, 'animated.svg'));
 }
 
 /** 20 frames a second, drawn here and encoded in a worker */
-export async function downloadGif(s: BlobState, px: number, round: boolean, onProgress?: (p: number) => void) {
-  const L = loopLength(s) || 3;
+export async function downloadGif(s: BlobState, o: ExportOptions, onProgress?: (p: number) => void) {
+  const px = Math.min(512, o.size);
+  const L = loopLength(s) || 2.4;
   const n = Math.max(2, Math.round(L / 0.05));
   const c = canvasOf(px);
   const ctx = c.getContext('2d', { willReadFrequently: true })!;
   const worker = new Worker(new URL('./gif.worker.ts', import.meta.url), { type: 'module' });
   const pixels = (t: number) => {
-    drawModel(ctx, frame(s, t), px, { circle: round });
+    drawModel(ctx, frame(s, t), px, o);
     return ctx.getImageData(0, 0, px, px).data.buffer;
   };
   let acks = 0;
@@ -91,7 +101,7 @@ export async function downloadGif(s: BlobState, px: number, round: boolean, onPr
     worker.onerror = (e) => reject(e);
   });
   try {
-    worker.postMessage({ type: 'init', size: px, delay: (L / n) * 100, transparent: s.bg.kind === 'none' || round });
+    worker.postMessage({ type: 'init', size: px, delay: (L / n) * 100, transparent: !o.bg || o.round });
     for (let i = 0; i < 12; i++) {
       const buf = pixels((i * L) / 12);
       worker.postMessage({ type: 'sample', buf }, [buf]);

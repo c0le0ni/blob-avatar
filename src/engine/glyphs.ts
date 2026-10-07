@@ -1,102 +1,66 @@
-// Eye glyphs: the outline of one eye, in eye units (about 1 tall, centered on 0),
-// resampled to EYE_POINTS so any glyph morphs into any other.
+// The eye: one capsule (a stadium), drawn at any width-to-height ratio. Tall and
+// narrow is the resting eye; as wide as tall it is a round eye; wider than tall it
+// is a flat bar. Expressions only change the numbers, so eyes always morph cleanly.
 
-import { resample, type Contour, type Pt } from './contour';
-import { TAU } from './math';
+import { make, type Contour } from './contour';
 
 export const EYE_POINTS = 28;
 
-export const EYES = ['block', 'dot', 'pill', 'oval', 'pixel', 'heart', 'star', 'cross', 'arc'] as const;
-export type Eye = (typeof EYES)[number];
+const cache = new Map<number, Contour>();
 
-/** an axis-aligned rounded rectangle, w x h, corner radius r */
-function roundRect(w: number, h: number, r: number, per = 10): Pt[] {
-  const pts: Pt[] = [];
-  const hw = w / 2, hh = h / 2;
-  const corners: [number, number, number][] = [[hw - r, -hh + r, -Math.PI / 2], [hw - r, hh - r, 0], [-hw + r, hh - r, Math.PI / 2], [-hw + r, -hh + r, Math.PI]];
-  for (const [cx, cy, a0] of corners) for (let i = 0; i <= per; i++) {
-    const a = a0 + (Math.PI / 2) * (i / per);
-    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-  }
-  return pts;
-}
-
-const ellipse = (w: number, h: number): Pt[] => Array.from({ length: 120 }, (_, i) => {
-  const a = (i / 120) * TAU;
-  return [(w / 2) * Math.sin(a), -(h / 2) * Math.cos(a)] as Pt;
-});
-
-const OUTLINES: Record<Eye, () => Pt[]> = {
-  // the default: a block with soft corners, a little taller than wide
-  block: () => roundRect(0.74, 1, 0.24),
-  dot: () => ellipse(0.82, 0.82),
-  pill: () => roundRect(0.46, 1.12, 0.23, 16),
-  oval: () => ellipse(0.7, 1),
-  pixel: () => roundRect(0.86, 0.86, 0.06, 3),
-  heart: () =>
-    Array.from({ length: 160 }, (_, i) => {
-      const t = (i / 160) * TAU;
-      const x = 16 * Math.sin(t) ** 3;
-      const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-      return [x / 30, -y / 30 - 0.05] as Pt;
-    }),
-  star: () =>
-    Array.from({ length: 10 }, (_, i) => {
-      const r = i % 2 ? 0.25 : 0.62;
-      const a = (i / 10) * TAU;
-      return [r * Math.sin(a), -r * Math.cos(a) + 0.04] as Pt;
-    }),
-  cross: () => {
-    // an X made of two bars, w = bar width
-    const w = 0.15, l = 0.44;
-    const arm = (a: number): Pt[] => {
-      const c = Math.cos(a), s = Math.sin(a);
-      return [[c * l - s * w, s * l + c * w], [c * l + s * w, s * l - c * w]];
-    };
-    const out: Pt[] = [];
-    for (let k = 0; k < 4; k++) {
-      const a = Math.PI / 4 + (k * Math.PI) / 2;
-      const [p1, p2] = arm(a);
-      out.push(p2, p1);
-      // the inner corner between this arm and the next
-      const m = a + Math.PI / 4;
-      out.push([Math.cos(m) * w * Math.SQRT2, Math.sin(m) * w * Math.SQRT2]);
-    }
-    return out.map(([x, y]) => [x, y] as Pt);
-  },
-  // a closed, smiling eye: a thick upside-down U
-  arc: () => {
-    const pts: Pt[] = [];
-    const R = 0.4, r = 0.2, cy = 0.2;
-    for (let i = 0; i <= 40; i++) {
-      const a = Math.PI + (Math.PI * i) / 40;
-      pts.push([R * Math.cos(a), cy + R * Math.sin(a)]);
-    }
-    for (let i = 0; i <= 12; i++) {
-      const a = (Math.PI * i) / 12;
-      pts.push([R - (R - r) / 2 + ((R - r) / 2) * Math.cos(a), cy + ((R - r) / 2) * Math.sin(a)]);
-    }
-    for (let i = 0; i <= 40; i++) {
-      const a = -(Math.PI * i) / 40;
-      pts.push([r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-    for (let i = 0; i <= 12; i++) {
-      const a = (Math.PI * i) / 12;
-      pts.push([-r - (R - r) / 2 + ((R - r) / 2) * Math.cos(a), cy + ((R - r) / 2) * Math.sin(a)]);
-    }
-    return pts;
-  },
-};
-
-const cache = new Map<Eye, Contour>();
-
-export function eyeContour(eye: Eye): Contour {
-  const hit = cache.get(eye);
+/**
+ * A capsule `w` wide and 1 tall, centered, with EYE_POINTS points evenly spaced
+ * along its outline, starting at the top middle and going clockwise on screen.
+ */
+export function capsule(w: number): Contour {
+  const key = Math.round(w * 200) / 200;
+  const hit = cache.get(key);
   if (hit) return hit;
-  const c = resample(OUTLINES[eye](), EYE_POINTS);
-  cache.set(eye, c);
+  const W = Math.max(0.05, key), H = 1;
+  const r = Math.min(W, H) / 2;
+  const sx = W / 2 - r, sy = H / 2 - r; // half lengths of the straight parts
+  // the outline as segments: top, right cap, right side, bottom, left cap, left side
+  const arcLen = (Math.PI / 2) * r;
+  const parts = [sx, arcLen, 2 * sy, arcLen, 2 * sx, arcLen, 2 * sy, arcLen, sx];
+  const total = parts.reduce((a, b) => a + b, 0);
+  const at = (d: number): [number, number] => {
+    let s = d;
+    // top edge, from the middle to the right
+    if (s <= parts[0]) return [s, -H / 2];
+    s -= parts[0];
+    const corner = (cx: number, cy: number, a0: number, u: number): [number, number] => {
+      const a = a0 + u / r;
+      return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+    };
+    if (s <= parts[1]) return corner(sx, -sy, -Math.PI / 2, s);
+    s -= parts[1];
+    if (s <= parts[2]) return [W / 2, -sy + s];
+    s -= parts[2];
+    if (s <= parts[3]) return corner(sx, sy, 0, s);
+    s -= parts[3];
+    if (s <= parts[4]) return [sx - s, H / 2];
+    s -= parts[4];
+    if (s <= parts[5]) return corner(-sx, sy, Math.PI / 2, s);
+    s -= parts[5];
+    if (s <= parts[6]) return [-W / 2, sy - s];
+    s -= parts[6];
+    if (s <= parts[7]) return corner(-sx, -sy, Math.PI, s);
+    s -= parts[7];
+    return [-sx + s, -H / 2];
+  };
+  const c = make(EYE_POINTS);
+  for (let i = 0; i < EYE_POINTS; i++) [c.x[i], c.y[i]] = at((i / EYE_POINTS) * total);
+  cache.set(key, c);
   return c;
 }
 
-/** glyphs drawn as a fixed figure: lids don't apply to them, a blink squeezes them instead */
-export const FIXED_GLYPHS: readonly Eye[] = ['heart', 'star', 'cross', 'arc'];
+/** a circle of radius 1 with EYE_POINTS points: the dots some animations draw */
+export const disc = (() => {
+  const c = make(EYE_POINTS);
+  for (let i = 0; i < EYE_POINTS; i++) {
+    const a = (i / EYE_POINTS) * Math.PI * 2;
+    c.x[i] = Math.sin(a);
+    c.y[i] = -Math.cos(a);
+  }
+  return c;
+})();

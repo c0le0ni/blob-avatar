@@ -41,4 +41,4 @@ export function mixHex(a: string, b: string, t: number): string {
 export const lightness = (hex: string) => toLab(toRgb(hex))[0];
 
 /** eyes that read on this body: near-black on light bodies, near-white on dark ones */
-export const autoEyeColor = (body: string) => (lightness(body) > 0.62 ? '#111111' : '#f7f7f2');
+export const autoEyeColor = (body: string) => (lightness(body) > 0.86 ? '#141416' : '#ffffff');

@@ -1,11 +1,11 @@
 // <blob-avatar>: the avatar on any page, from one script tag.
 //
 //   <script src="https://blob.coleoni.com/embed.js" defer></script>
-//   <blob-avatar shape="bean" color="#aefa0e" eyes="block" expression="happy"
-//                animation="idle.3,hop.1.6" size="160" gaze></blob-avatar>
+//   <blob-avatar shape="circle" color="#aefa0e" expression="happy"
+//                animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar>
 //
-// Attributes are the keys of the share link (shape, color, eyes, mode, eyec,
-// expression, animation, bg, seed), or `state` with a whole link hash. `gaze`
+// Attributes are the keys of the share link (shape, color, expression, animation,
+// seed), or `state` with a whole link hash. `gaze`
 // makes it follow the cursor, `paused` holds it still. Works under a strict CSP:
 // no inline styles, no eval. One animation loop drives every avatar on the page,
 // and only the ones on screen are drawn.
@@ -15,7 +15,7 @@ import { fromHash, fromParams } from '../engine/codec';
 import { idleGaze } from '../engine/motion';
 import { LiveSvg } from '../render/svg';
 
-const ATTRS = ['shape', 'color', 'eyes', 'mode', 'eyec', 'expression', 'expr', 'animation', 'anim', 'bg', 'seed', 'size', 'gaze', 'paused', 'state'];
+const ATTRS = ['shape', 'color', 'expression', 'expr', 'animation', 'anim', 'seed', 'size', 'gaze', 'paused', 'state'];
 const CSS = ':host{display:inline-block;width:160px;height:160px;line-height:0;vertical-align:middle}:host([hidden]){display:none}svg{width:100%;height:100%;overflow:visible}';
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -92,7 +92,7 @@ export class BlobAvatarElement extends HTMLElement {
     super();
     const root = this.attachShadow({ mode: 'open' });
     styles(root);
-    this.svg = new LiveSvg(document, `ba${Math.random().toString(36).slice(2, 8)}`);
+    this.svg = new LiveSvg(document);
     root.appendChild(this.svg.el);
   }
 

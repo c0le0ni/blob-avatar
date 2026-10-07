@@ -115,7 +115,7 @@ describe('gif', () => {
 });
 
 describe('animated svg', () => {
-  const states = [cloneState(DEFAULT_STATE), randomState(5), { ...randomState(77), eyeMode: 'hole' as const }];
+  const states = [cloneState(DEFAULT_STATE), randomState(5), randomState(77)];
 
   it('every keyframe of a path has the same commands, and the loop closes', () => {
     for (const s of states) {
@@ -142,6 +142,6 @@ describe('animated svg', () => {
   });
 
   it('stays a reasonable size', () => {
-    expect(animatedSvg(cloneState(DEFAULT_STATE)).length).toBeLessThan(160_000);
+    expect(animatedSvg({ ...cloneState(DEFAULT_STATE), cycle: [{ anim: 'idle', dur: 4.8 }] }).length).toBeLessThan(60_000);
   });
 });

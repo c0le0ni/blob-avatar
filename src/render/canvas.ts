@@ -1,15 +1,14 @@
 // Canvas output: the same render model, drawn with Path2D. Used for PNG and GIF.
 
-import { toPath } from '../engine/contour';
+import { toOpenPath, toPath } from '../engine/contour';
 import { VIEW, type RenderModel } from '../engine/frame';
-import type { Background } from '../engine/state';
-import { bodyPath } from './svg';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export interface CanvasOptions {
-  bg?: Background;
-  circle?: boolean;
+  /** a solid background, or none (transparent) */
+  bg?: string | null;
+  round?: boolean;
 }
 
 /** draw a frame filling a px-by-px canvas */
@@ -20,29 +19,26 @@ export function drawModel(ctx: Ctx, m: RenderModel, px: number, opt: CanvasOptio
   ctx.clearRect(0, 0, px, px);
   ctx.setTransform(k, 0, 0, k, px / 2, px / 2);
   ctx.save();
-  if (opt.circle) {
+  if (opt.round) {
     ctx.beginPath();
     ctx.arc(0, 0, half, 0, Math.PI * 2);
     ctx.clip();
   }
-  const bg = opt.bg ?? m.bg;
-  if (bg.kind === 'solid') {
-    ctx.fillStyle = bg.c1;
-    ctx.fillRect(-half, -half, VIEW, VIEW);
-  } else if (bg.kind === 'linear') {
-    const a = ((bg.angle - 90) * Math.PI) / 180;
-    const x = Math.cos(a) * half, y = Math.sin(a) * half;
-    const g = ctx.createLinearGradient(-x, -y, x, y);
-    g.addColorStop(0, bg.c1);
-    g.addColorStop(1, bg.c2);
-    ctx.fillStyle = g;
+  if (opt.bg) {
+    ctx.fillStyle = opt.bg;
     ctx.fillRect(-half, -half, VIEW, VIEW);
   }
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = m.body.fill;
-  ctx.fill(new Path2D(bodyPath(m)), m.holes.length ? 'evenodd' : 'nonzero');
-  for (const l of [...m.cheeks, ...m.eyes, ...m.decor]) {
-    if (l.alpha <= 0) continue;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const t of m.trails) {
+    if (t.alpha <= 0.002) continue;
+    ctx.globalAlpha = t.alpha;
+    ctx.strokeStyle = t.color;
+    ctx.lineWidth = t.width;
+    ctx.stroke(new Path2D(toOpenPath(t.x, t.y)));
+  }
+  for (const l of [m.body, ...m.parts, ...m.eyes]) {
+    if (l.alpha <= 0.002) continue;
     ctx.globalAlpha = l.alpha;
     ctx.fillStyle = l.fill;
     ctx.fill(new Path2D(toPath(l.c)));

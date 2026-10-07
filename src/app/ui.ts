@@ -1,103 +1,82 @@
-// Small pieces of page behavior: the language menu, the editor tabs and the toast.
+// Small pieces of page behavior: the mode rail, popovers and the toast.
 
-/** the EN/PT menu in the navbar; the choice is saved and beats the automatic redirect */
-export function langMenu(reduced: boolean) {
-  document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
-    a.addEventListener('click', () => {
-      try {
-        localStorage.setItem('coleoni-lang', a.dataset.lang!);
-      } catch {}
-      // keep the avatar when switching language
-      a.href = a.getAttribute('href')!.split('#')[0] + location.hash;
-    }),
-  );
-  const root = document.querySelector('[data-lang-menu]');
-  if (!root) return;
-  const btn = root.querySelector('button')!;
-  const menu = root.querySelector<HTMLElement>('[role="menu"]')!;
-  const items = [...menu.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
-  const current = Math.max(0, items.findIndex((i) => i.getAttribute('aria-checked') === 'true'));
-  let timer = 0;
-  const open = (focus: boolean) => {
-    clearTimeout(timer);
-    menu.classList.remove('is-closing');
-    menu.hidden = false;
-    btn.setAttribute('aria-expanded', 'true');
-    if (focus) items[current].focus();
-  };
-  const close = (focusBtn: boolean) => {
-    if (menu.hidden || btn.getAttribute('aria-expanded') === 'false') return;
-    btn.setAttribute('aria-expanded', 'false');
-    if (focusBtn) btn.focus();
-    if (reduced) {
-      menu.hidden = true;
-      return;
-    }
-    menu.classList.add('is-closing');
-    timer = window.setTimeout(() => {
-      menu.hidden = true;
-      menu.classList.remove('is-closing');
-    }, 120);
-  };
-  btn.addEventListener('click', () => (btn.getAttribute('aria-expanded') === 'true' ? close(false) : open(false)));
-  btn.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    open(true);
-  });
-  menu.addEventListener('keydown', (e) => {
-    const i = items.indexOf(document.activeElement as HTMLElement);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      close(true);
-    } else if (e.key === 'Tab') close(false);
-  });
-  items.forEach((a) =>
-    a.addEventListener('click', (e) => {
-      if (a.getAttribute('aria-checked') !== 'true') return;
-      e.preventDefault();
-      close(true);
-    }),
-  );
-  document.addEventListener('click', (e) => {
-    if (!root.contains(e.target as Node)) close(false);
-  });
-}
-
-/** the editor tabs: arrows move between them, the panel follows */
-export const tabs = (() => {
-  let list: HTMLElement[] = [];
-  let onChange = () => {};
+/** the rail is a vertical tablist: arrows move between modes, the panel follows */
+export function rail(onSelect: (id: string) => void) {
+  const tabs = [...document.querySelectorAll<HTMLElement>('.rail [role=tab]')];
   const select = (id: string, focus = false) => {
-    for (const t of list) {
-      const on = t.id === `tab-${id}`;
+    for (const t of tabs) {
+      const on = t.id === `mode-${id}`;
       t.setAttribute('aria-selected', String(on));
       t.tabIndex = on ? 0 : -1;
       document.getElementById(t.getAttribute('aria-controls')!)!.hidden = !on;
       if (on && focus) t.focus();
-      if (on) t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
-    onChange();
+    onSelect(id);
   };
-  const init = (change: () => void) => {
-    onChange = change;
-    list = [...document.querySelectorAll<HTMLElement>('[role=tab]')];
-    list.forEach((t, i) => {
-      t.addEventListener('click', () => select(t.id.slice(4)));
-      t.addEventListener('keydown', (e) => {
-        const n = list.length;
-        const j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
-        if (j < 0) return;
-        e.preventDefault();
-        select(list[j].id.slice(4), true);
-      });
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t.id.slice(5)));
+    t.addEventListener('keydown', (e) => {
+      const n = tabs.length;
+      const next = ['ArrowDown', 'ArrowRight'].includes(e.key) ? (i + 1) % n : ['ArrowUp', 'ArrowLeft'].includes(e.key) ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+      if (next < 0) return;
+      e.preventDefault();
+      select(tabs[next].id.slice(5), true);
     });
+  });
+  return select;
+}
+
+/**
+ * A popover opened by a button: it animates in and out, closes on Escape, on a click
+ * outside and when focus leaves it, and gives focus back to its button.
+ */
+export function popover(trigger: HTMLElement, pop: HTMLElement, reduced: boolean) {
+  let timer = 0;
+  const isOpen = () => !pop.hidden && !pop.classList.contains('closing');
+  const open = () => {
+    clearTimeout(timer);
+    pop.classList.remove('closing');
+    pop.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    pop.querySelector<HTMLElement>('button, input')?.focus();
   };
-  return { init, select };
-})();
+  const close = (refocus = false) => {
+    if (!isOpen()) return;
+    trigger.setAttribute('aria-expanded', 'false');
+    if (refocus) trigger.focus();
+    if (reduced) {
+      pop.hidden = true;
+      return;
+    }
+    pop.classList.add('closing');
+    timer = window.setTimeout(() => {
+      pop.hidden = true;
+      pop.classList.remove('closing');
+    }, 160);
+  };
+  trigger.addEventListener('click', () => (isOpen() ? close() : open()));
+  pop.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close(true);
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const items = [...pop.querySelectorAll<HTMLElement>('.pop-item')];
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      if (i < 0) return;
+      e.preventDefault();
+      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+    }
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (isOpen() && !pop.contains(e.target as Node) && !trigger.contains(e.target as Node)) close();
+  });
+  pop.addEventListener('focusout', (e) => {
+    const to = e.relatedTarget as Node | null;
+    if (to && !pop.contains(to) && to !== trigger) close();
+  });
+  return { open, close, isOpen };
+}
 
 let toastTimer = 0;
 export function toast(msg: string) {
