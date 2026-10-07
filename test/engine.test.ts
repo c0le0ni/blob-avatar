@@ -4,7 +4,7 @@ import { fromHash, randomState, toHash } from '../src/engine/codec';
 import { toSvgString } from '../src/render/svg';
 
 const state = (p: Partial<BlobState> = {}): BlobState => ({ ...cloneState(DEFAULT_STATE), ...p });
-const counts = (m: RenderModel) => [m.body.c.x.length, m.eyes[0].c.x.length, m.eyes[1].c.x.length, m.parts.length, ...m.parts.map((p) => p.c.x.length), m.trails.length, ...m.trails.map((t) => t.x.length)].join(',');
+const counts = (m: RenderModel) => [m.body.c.x.length, m.hole.x.length, m.eyes[0].c.x.length, m.eyes[1].c.x.length, m.parts.length, ...m.parts.map((p) => p.c.x.length), m.back.length, m.front.length, ...[...m.back, ...m.front].map((t) => t.x.length)].join(',');
 
 describe('frame', () => {
   it('is deterministic: same state and time, same SVG', () => {
@@ -27,18 +27,16 @@ describe('frame', () => {
     }
   });
 
-  it('every animation starts and ends as the plain blob', () => {
+  it('every animation turns back into the plain blob when idle follows it', () => {
     for (const anim of ANIMS) {
       const d = DEFAULT_DUR[anim];
-      const s = state({ cycle: [{ anim, dur: d }] });
-      const plain = frame(state({ cycle: [{ anim: 'idle', dur: d }] }), 0);
-      for (const t of [0, d - 1e-6]) {
-        const m = frame(s, t);
-        const dx = m.body.c.x.map((x, i) => Math.abs(x - plain.body.c.x[i]));
-        expect(Math.max(...dx), `${anim} at ${t}`).toBeLessThan(1.5);
-        expect(m.parts.every((p) => p.alpha < 0.02)).toBe(true);
-        expect(m.trails.every((tr) => tr.alpha < 0.02)).toBe(true);
-      }
+      const s = state({ cycle: [{ anim, dur: d }, { anim: 'idle', dur: 2 }] });
+      const plain = frame(state({ cycle: [{ anim: 'idle', dur: d + 2 }] }), d + 1.5, { gaze: [0, 0] });
+      const m = frame(s, d + 1.5, { gaze: [0, 0] });
+      const dx = m.body.c.x.map((x, i) => Math.abs(x - plain.body.c.x[i]));
+      expect(Math.max(...dx), anim).toBeLessThan(1.5);
+      expect(m.parts.every((p) => p.alpha < 0.02)).toBe(true);
+      expect([...m.back, ...m.front].every((tr) => tr.alpha < 0.02)).toBe(true);
     }
   });
 

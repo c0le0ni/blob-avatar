@@ -12,7 +12,6 @@
 
 import { DEFAULT_STATE, frame, loopLength, type BlobState } from '../engine';
 import { fromHash, fromParams } from '../engine/codec';
-import { idleGaze } from '../engine/motion';
 import { LiveSvg } from '../render/svg';
 
 const ATTRS = ['shape', 'color', 'expression', 'expr', 'animation', 'anim', 'seed', 'size', 'gaze', 'paused', 'state'];
@@ -41,6 +40,7 @@ const live = new Set<BlobAvatarElement>();
 let running = false;
 let last = 0;
 let pointer: [number, number] | null = null;
+let pointerNear = false;
 
 function loop(now: number) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -71,9 +71,13 @@ function listen() {
   listening = true;
   addEventListener('pointermove', (e: PointerEvent) => {
     pointer = [e.clientX, e.clientY];
+    pointerNear = true;
     wake();
   }, { passive: true });
-  document.addEventListener('pointerleave', () => (pointer = null));
+  document.addEventListener('pointerleave', () => {
+    pointer = null;
+    pointerNear = false;
+  });
 }
 
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', wake);
@@ -133,25 +137,26 @@ export class BlobAvatarElement extends HTMLElement {
 
   private draw() {
     const still = this.still();
-    this.svg.update(frame(this.state, this.t, still ? { still: true } : { gaze: [this.gaze.x, this.gaze.y] }));
+    const follow = pointerNear && this.hasAttribute('gaze');
+    this.svg.update(frame(this.state, this.t, still ? { still: true } : follow ? { gaze: [this.gaze.x, this.gaze.y] } : {}));
   }
 
   /** advance one frame; returns whether it wants more frames */
   step(dt: number): boolean {
     if (this.still() || !this.onScreen || document.hidden) return false;
-    const L = loopLength(this.state) || 3;
+    const L = loopLength(this.state) || 2.4;
     this.t = (this.t + dt) % L;
-    let target = idleGaze(this.t, this.state.seed, L);
     if (pointer && this.hasAttribute('gaze')) {
       const r = this.getBoundingClientRect();
       const k = (v: number) => Math.max(-1, Math.min(1, v));
-      target = [k((pointer[0] - r.left - r.width / 2) / (innerWidth * 0.4)), k((pointer[1] - r.top - r.height / 2) / (innerHeight * 0.4))];
+      const target = [k((pointer[0] - r.left - r.width / 2) / (innerWidth * 0.4)), k((pointer[1] - r.top - r.height / 2) / (innerHeight * 0.4))];
+      // the eyes ease toward the cursor on a spring
+      const w = 12, g = this.gaze;
+      g.vx += ((target[0] - g.x) * w * w - 2 * w * g.vx) * dt;
+      g.vy += ((target[1] - g.y) * w * w - 2 * w * g.vy) * dt;
+      g.x += g.vx * dt;
+      g.y += g.vy * dt;
     }
-    const w = 12, g = this.gaze;
-    g.vx += ((target[0] - g.x) * w * w - 2 * w * g.vx) * dt;
-    g.vy += ((target[1] - g.y) * w * w - 2 * w * g.vy) * dt;
-    g.x += g.vx * dt;
-    g.y += g.vy * dt;
     this.draw();
     return true;
   }

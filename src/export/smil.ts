@@ -5,6 +5,7 @@
 import type { Contour } from '../engine/contour';
 import { frame, VIEW, type RenderModel } from '../engine/frame';
 import { loopLength, type BlobState } from '../engine/state';
+import { hasGap } from '../render/svg';
 
 export interface AnimatedSvgOptions {
   /** pixel size of the square output */
@@ -23,11 +24,12 @@ interface Track {
   pts: Float64Array[];
   /** per frame: how many points each contour has, to rebuild the path */
   shape: number[];
-  /** fill color, or stroke color for a trail */
+  /** fill color, or a trail's gradient stops joined by commas */
   fill: string[];
   alpha: number[];
   /** a trail: an open stroked line of this width */
   stroke?: number;
+  rule?: string;
 }
 
 const flat = (cs: Contour[]) => {
@@ -92,9 +94,9 @@ function openPathOf(p: Float64Array): string {
 }
 
 function tracks(models: RenderModel[]): Track[] {
-  const layer = (get: (m: RenderModel) => { cs: Contour[]; fill: string; alpha: number }, stroke?: number): Track => {
+  const layer = (get: (m: RenderModel) => { cs: Contour[]; fill: string; alpha: number }, stroke?: number, rule?: string): Track => {
     const first = get(models[0]);
-    const t: Track = { pts: [], shape: first.cs.map((c) => c.x.length), fill: [], alpha: [], stroke };
+    const t: Track = { pts: [], shape: first.cs.map((c) => c.x.length), fill: [], alpha: [], stroke, rule };
     for (const m of models) {
       const l = get(m);
       t.pts.push(flat(l.cs));
@@ -121,12 +123,17 @@ function tracks(models: RenderModel[]): Track[] {
     return t;
   };
   // the widest a trail gets in the loop: SMIL keeps a trail's width fixed
-  const width = (i: number) => Math.max(...models.map((m) => (m.trails[i].alpha > 0.002 ? m.trails[i].width : 0)));
+  const lines = (side: 'back' | 'front') =>
+    models[0][side].map((_, i) => {
+      const width = Math.max(...models.map((m) => (m[side][i].alpha > 0.002 ? m[side][i].width : 0)));
+      return layer((m) => ({ cs: [{ x: m[side][i].x, y: m[side][i].y }], fill: m[side][i].colors.join(','), alpha: m[side][i].alpha }), width);
+    });
   return [
-    ...models[0].trails.map((_, i) => layer((m) => ({ cs: [{ x: m.trails[i].x, y: m.trails[i].y }], fill: m.trails[i].color, alpha: m.trails[i].alpha }), width(i))),
-    layer((m) => ({ cs: [m.body.c], fill: m.body.fill, alpha: m.body.alpha })),
+    ...lines('back'),
+    layer((m) => ({ cs: [m.body.c], fill: m.body.fill, alpha: m.body.alpha }), undefined, 'body'),
     ...models[0].parts.map((_, i) => layer((m) => ({ cs: [m.parts[i].c], fill: m.parts[i].fill, alpha: m.parts[i].alpha }))),
     ...[0, 1].map((i) => layer((m) => ({ cs: [m.eyes[i].c], fill: m.eyes[i].fill, alpha: m.eyes[i].alpha }))),
+    ...lines('front'),
   ].filter((t) => t.alpha.some((a) => a > 0.001));
 }
 
@@ -164,22 +171,37 @@ export function animatedSvg(state: BlobState, opt: AnimatedSvgOptions = {}): str
   // n + 1 frames: the last one is the first again, so the loop closes
   const models = Array.from({ length: n + 1 }, (_, i) => frame(state, (i * L) / n));
   const ts = tracks(models);
+  // the round gap some animations cut into the body: a clip, animated like the rest
+  const gapped = models.some((m) => hasGap(m));
+  const holes = gapped ? models.map((m) => [m.hole.x, m.hole.y]) : [];
   const keep = keyframes(ts, opt.tolerance ?? 0.4);
   const keyTimes = keep.map((i) => num4(i / n)).join(';');
   const dur = `${Math.round(L * 1000) / 1000}s`;
   const anim = (attr: string, values: string[], discrete = false) =>
     `<animate attributeName="${attr}" dur="${dur}" repeatCount="indefinite"${discrete ? ' calcMode="discrete"' : ''} keyTimes="${keyTimes}" values="${values.join(';')}"/>`;
 
-  const paths = ts.map((t) => {
+  const defs: string[] = [];
+  const paths = ts.map((t, k) => {
     const d = keep.map((i) => (t.stroke !== undefined ? openPathOf(t.pts[i]) : pathOf(t.pts[i], t.shape)));
     const colors = keep.map((i) => t.fill[i]);
     const alphas = keep.map((i) => t.alpha[i]);
     const colorConst = colors.every((f) => f === colors[0]);
     const alphaConst = alphas.every((a) => a === alphas[0]);
     const paint = t.stroke !== undefined ? 'stroke' : 'fill';
-    const look = t.stroke !== undefined ? `fill="none" stroke="${colors[0]}" stroke-width="${Math.round(t.stroke * 10) / 10}" stroke-linecap="round" stroke-linejoin="round"` : `fill="${colors[0]}"`;
+    let look = `fill="${colors[0]}"${t.rule === 'body' && gapped ? ' clip-path="url(#gap)"' : ''}`;
+    if (t.stroke !== undefined) {
+      // a gradient that follows the line from its first point to its last
+      const ends = (j: number) => { const p = t.pts[keep[j]]; return [p[0], p[1], p[p.length - 2], p[p.length - 1]].map((v) => Math.round(v * 10) / 10); };
+      const e = keep.map((_, j) => ends(j));
+      const stops = [0, 1, 2].map((s) => {
+        const c = colors.map((x) => x.split(',')[s]);
+        return `<stop offset="${s / 2}" stop-color="${c[0]}">${c.every((v) => v === c[0]) ? '' : anim('stop-color', c, true)}</stop>`;
+      });
+      defs.push(`<linearGradient id="g${k}" gradientUnits="userSpaceOnUse" x1="${e[0][0]}" y1="${e[0][1]}" x2="${e[0][2]}" y2="${e[0][3]}">${['x1', 'y1', 'x2', 'y2'].map((a, q) => anim(a, e.map((v) => String(v[q])))).join('')}${stops.join('')}</linearGradient>`);
+      look = `fill="none" stroke="url(#g${k})" stroke-width="${Math.round(t.stroke * 10) / 10}" stroke-linecap="round" stroke-linejoin="round"`;
+    }
     const attrs = [`d="${d[0]}"`, look, !alphaConst || alphas[0] < 0.999 ? `${paint}-opacity="${alphas[0]}"` : ''].filter(Boolean).join(' ');
-    const anims = [anim('d', d), colorConst ? '' : anim(paint, colors, true), alphaConst ? '' : anim(`${paint}-opacity`, alphas.map(String))].join('');
+    const anims = [anim('d', d), colorConst || t.stroke !== undefined ? '' : anim(paint, colors, true), alphaConst ? '' : anim(`${paint}-opacity`, alphas.map(String))].join('');
     return `<path ${attrs}>${anims}</path>`;
   });
 
@@ -187,8 +209,14 @@ export function animatedSvg(state: BlobState, opt: AnimatedSvgOptions = {}): str
   const s = opt.size ?? 512;
   const bg = opt.bg ? `<rect x="${-half}" y="${-half}" width="${VIEW}" height="${VIEW}" fill="${opt.bg}"/>` : '';
   const body = bg + paths.join('');
-  const round = opt.round ? `<defs><clipPath id="round"><circle r="${half}"/></clipPath></defs><g clip-path="url(#round)">${body}</g>` : body;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${VIEW} ${VIEW}" width="${s}" height="${s}">${round}</svg>`;
+  if (gapped) {
+    const rect = `M${-VIEW} ${-VIEW}h${2 * VIEW}v${2 * VIEW}h${-2 * VIEW}Z`;
+    const hd = keep.map((i) => rect + pathOf(Float64Array.from([...holes[i][0]].flatMap((x, k) => [x, holes[i][1][k]])), [holes[i][0].length]));
+    defs.push(`<clipPath id="gap"><path clip-rule="evenodd" d="${hd[0]}">${anim('d', hd)}</path></clipPath>`);
+  }
+  if (opt.round) defs.push(`<clipPath id="round"><circle r="${half}"/></clipPath>`);
+  const inner = opt.round ? `<g clip-path="url(#round)">${body}</g>` : body;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${VIEW} ${VIEW}" width="${s}" height="${s}">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${inner}</svg>`;
 }
 
 const num4 = (v: number) => String(Math.round(v * 10000) / 10000);

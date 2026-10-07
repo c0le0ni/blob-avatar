@@ -4,7 +4,7 @@
 //   ?strip=thinking    one animation as 16 still frames
 //   ?wordmark          the logo, big, on dark and light
 
-import { ANIMS, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, IDLE_CYCLE, PALETTE, SHAPES, frame, cloneState, type Anim, type BlobState } from './engine';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, IDLE_CYCLE, PALETTE, SHAPES, frame, cloneState, type Anim, type BlobState } from './engine';
 import { LiveSvg } from './render/svg';
 import { wordmarkSvg } from './brand';
 
@@ -36,7 +36,24 @@ const base = (patch: Partial<BlobState>): BlobState => ({ ...cloneState(DEFAULT_
 const clip = (anim: Anim): BlobState => base({ cycle: [{ anim, dur: DEFAULT_DUR[anim] }, { anim: 'idle', dur: 0.8 }], color: '#18181b' });
 
 const strip = params.get('strip') as Anim | null;
-if (params.has('wordmark')) {
+if (params.has('one')) {
+  // one blob, for side-by-side comparisons: ?one&shape=&expr=&color=&anim=&t=
+  document.body.style.cssText = 'margin:0;background:#f9f9f9;padding:0';
+  root.innerHTML = '';
+  const svg = new LiveSvg();
+  svg.el.setAttribute('id', 'one');
+  svg.el.style.cssText = 'width:316px;height:316px;display:block';
+  root.appendChild(svg.el);
+  const anim = (params.get('anim') || 'idle') as Anim;
+  const s = base({
+    shape: (params.get('shape') || 'circle') as BlobState['shape'],
+    expression: (params.get('expr') || 'neutral') as BlobState['expression'],
+    color: '#' + (params.get('color') || '0a0a0c'),
+    cycle: params.has('cycle') ? DEFAULT_CYCLE : anim === 'idle' ? IDLE_CYCLE : [{ anim, dur: DEFAULT_DUR[anim] }],
+  });
+  const t = Number(params.get('t') || 0);
+  svg.update(frame(s, t, { still: params.has('still') }));
+} else if (params.has('wordmark')) {
   root.innerHTML = `<div style="display:grid;gap:24px;padding:24px">
     <div style="background:#0a0a0a;padding:40px;border:1px solid #222">${wordmarkSvg({ height: 120 })}</div>
     <div style="background:#f3eee4;padding:40px">${wordmarkSvg({ height: 120, letters: '#161616' })}</div>

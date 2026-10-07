@@ -6,7 +6,7 @@
 
 import { DEFAULT_STATE, frame, cloneState, type BlobState } from './engine';
 import { bounds, make, polygonArea, resample, toPath, type Contour, type Pt } from './engine/contour';
-import { breath, blink } from './engine/motion';
+import { blink } from './engine/motion';
 import { layersMarkup } from './render/svg';
 
 /** pixel size, in wordmark units */
@@ -74,7 +74,8 @@ function pixelEye(cx: number, open: number): Contour {
 
 /** body, eyes, at time t (breathing and blinking), in the 200-unit drawing */
 function logoAt(t: number | null) {
-  const br = t === null ? { sx: 1, sy: 1 } : breath(t, 6.4);
+  const b = t === null ? 0 : Math.sin((2 * Math.PI * t) / 3.2);
+  const br = { sx: 1 - 0.012 * b, sy: 1 + 0.018 * b };
   const open = t === null ? 1 : blink(t, 11, 6.4);
   const bottom = Math.max(...logoBody.y);
   const body = make(48);
@@ -147,7 +148,7 @@ export function stripSvg(height = 64): string {
     { shape: 'droplet', color: '#14b8a6', expression: 'curious' },
   ];
   const cell = 130;
-  const parts = looks.map((l, i) => `<g transform="translate(${i * cell + cell / 2} 65)">${layersMarkup(frame({ ...cloneState(DEFAULT_STATE), ...l }, 0, { still: true }))}</g>`);
+  const parts = looks.map((l, i) => `<g transform="translate(${i * cell + cell / 2} 65)">${layersMarkup(frame({ ...cloneState(DEFAULT_STATE), ...l }, 0, { still: true })).body}</g>`);
   const w = looks.length * cell;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 130" width="${Math.round((height * w) / 130)}" height="${height}" role="img" aria-label="Six blob avatars">${parts.join('')}</svg>`;
 }

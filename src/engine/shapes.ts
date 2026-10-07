@@ -1,42 +1,55 @@
 // The body shapes, and the figures the body turns into during some animations.
 // Each one is drawn once as a dense outline and resampled into a BODY_POINTS
-// contour, so any of them morphs into any other. Shapes are scaled to the area of
-// a unit circle (no shape looks bigger than another); figures keep their own size.
+// contour, so any of them morphs into any other. Sizes are in body radii: the
+// circle has radius 1 and the others fill about the same box, as drawn.
 
-import { bounds, polygonArea, resample, type Contour, type Pt } from './contour';
+import { bounds, resample, type Contour, type Pt } from './contour';
 import { TAU } from './math';
 
-export const BODY_POINTS = 48;
+export const BODY_POINTS = 56;
 
 export const SHAPES = ['circle', 'pebble', 'squircle', 'capsule', 'triangle', 'hexagon', 'cloud', 'droplet'] as const;
 export type Shape = (typeof SHAPES)[number];
 
-/** outlines only animations use: an egg, the stem of a "!", a play triangle */
-export const FIGURES = ['egg', 'bar', 'play'] as const;
+/** outlines only animations use */
+export const FIGURES = ['egg', 'hexa', 'play', 'stem'] as const;
 export type Figure = Shape | (typeof FIGURES)[number];
-
-/** where the eyes sit on each shape: an offset and a scale for the face, in body radii */
-export interface FaceSpot {
-  x: number;
-  y: number;
-  s: number;
-}
 
 // ---------------------------------------------------------------- outline helpers
 
 /** a polar outline: angle 0 at the top, clockwise on screen */
-function polar(r: (a: number) => number, samples = 360): Pt[] {
-  const pts: Pt[] = [];
-  for (let i = 0; i < samples; i++) {
+function polar(r: (a: number) => number, samples = 720): Pt[] {
+  return Array.from({ length: samples }, (_, i) => {
     const a = (i / samples) * TAU;
     const rr = r(a);
-    pts.push([rr * Math.sin(a), -rr * Math.cos(a)]);
-  }
-  return pts;
+    return [rr * Math.sin(a), -rr * Math.cos(a)] as Pt;
+  });
 }
 
+/** a radius from a short Fourier series: [a0, a1, b1, a2, b2, ...] over the angle from the top */
+const series = (c: number[]) => (a: number) => {
+  let r = c[0];
+  for (let k = 1; 2 * k <= c.length; k++) r += c[2 * k - 1] * Math.cos(k * a) + (c[2 * k] ?? 0) * Math.sin(k * a);
+  return r;
+};
+
+/** distance from the origin to the far edge of a union of circles, along an angle */
+function unionRay(circles: [number, number, number][], a: number): number {
+  const dx = Math.sin(a), dy = -Math.cos(a);
+  let best = 0;
+  for (const [cx, cy, r] of circles) {
+    const b = dx * cx + dy * cy;
+    const disc = b * b - (cx * cx + cy * cy - r * r);
+    if (disc >= 0) best = Math.max(best, b + Math.sqrt(disc));
+  }
+  return best;
+}
+
+/** a radius from cosines only (shapes symmetric left to right): [a0, a1, a2, ...] */
+const cosines = (c: number[]) => (a: number) => c.reduce((r, v, k) => r + v * Math.cos(k * a), 0);
+
 /** a polygon with every corner replaced by a circular arc of the given radius */
-function roundedPolygon(verts: Pt[], radius: number, perCorner = 16): Pt[] {
+function roundedPolygon(verts: Pt[], radius: number, perCorner = 24): Pt[] {
   const pts: Pt[] = [];
   const n = verts.length;
   for (let i = 0; i < n; i++) {
@@ -57,89 +70,103 @@ function roundedPolygon(verts: Pt[], radius: number, perCorner = 16): Pt[] {
     let da = Math.atan2(cy + vy * cut - oy, cx + vx * cut - ox) - a0;
     while (da > Math.PI) da -= TAU;
     while (da < -Math.PI) da += TAU;
-    for (let k = 0; k <= perCorner; k++) {
-      const a = a0 + (da * k) / perCorner;
-      pts.push([ox + r * Math.cos(a), oy + r * Math.sin(a)]);
-    }
+    for (let k = 0; k <= perCorner; k++) pts.push([ox + r * Math.cos(a0 + (da * k) / perCorner), oy + r * Math.sin(a0 + (da * k) / perCorner)]);
+  }
+  return pts;
+}
+
+/** the hull of two circles on the vertical axis: radius rt on top, rb at the bottom, h tall in all */
+function taper(rt: number, rb: number, h: number, n = 360): Pt[] {
+  const yt = -h / 2 + rt, yb = h / 2 - rb;
+  const a = Math.asin((rt - rb) / (yb - yt)); // how much the sides lean
+  const pts: Pt[] = [];
+  // the top arc, from the left tangent point over the top to the right one
+  for (let i = 0; i <= n / 2; i++) {
+    const t = Math.PI - a + ((Math.PI + 2 * a) * i) / (n / 2);
+    pts.push([rt * Math.cos(t), yt + rt * Math.sin(t)]);
+  }
+  // the bottom arc, from the right tangent point under the bottom to the left one
+  for (let i = 0; i <= n / 2; i++) {
+    const t = -a + ((Math.PI + 2 * a) * i) / (n / 2);
+    pts.push([rb * Math.cos(t), yb + rb * Math.sin(t)]);
   }
   return pts;
 }
 
 /** a stadium (a rectangle with fully round ends), w wide and h tall */
-export function stadium(w: number, h: number): Pt[] {
-  const r = Math.min(w, h) / 2;
-  return roundedPolygon([[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]], r * 0.999, 24);
-}
+export const stadium = (w: number, h: number): Pt[] => roundedPolygon([[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]], (Math.min(w, h) / 2) * 0.999);
 
-/** distance from the origin to the far edge of a union of circles, along an angle */
-function unionRay(circles: [number, number, number][], a: number): number {
-  const dx = Math.sin(a), dy = -Math.cos(a);
-  let best = 0;
-  for (const [cx, cy, r] of circles) {
-    const b = dx * cx + dy * cy;
-    const disc = b * b - (cx * cx + cy * cy - r * r);
-    if (disc >= 0) best = Math.max(best, b + Math.sqrt(disc));
-  }
-  return best;
-}
-
-const regular = (n: number, r: number, turn = 0): Pt[] => Array.from({ length: n }, (_, i) => [r * Math.sin(turn + (i * TAU) / n), -r * Math.cos(turn + (i * TAU) / n)] as Pt);
+/** n corners on a circle of radius R, the first at the top, turned by `turn` */
+const regular = (n: number, R: number, turn = 0): Pt[] => Array.from({ length: n }, (_, i) => [R * Math.sin(turn + (i * TAU) / n), -R * Math.cos(turn + (i * TAU) / n)] as Pt);
 
 // ---------------------------------------------------------------- the outlines
 
 const OUTLINES: Record<Figure, () => Pt[]> = {
   circle: () => polar(() => 1),
-  // a river stone: a little wider than tall, softly uneven
-  pebble: () => polar((a) => 1 + 0.07 * Math.cos(2 * (a - 0.45)) + 0.025 * Math.cos(3 * a + 0.8)).map(([x, y]) => [x * 1.04, y * 0.9]),
-  // a superellipse: between a circle and a square
-  squircle: () => polar((a) => (Math.abs(Math.sin(a)) ** 4 + Math.abs(Math.cos(a)) ** 4) ** -0.25),
-  capsule: () => stadium(2.5, 1.45),
-  triangle: () => roundedPolygon(regular(3, 1.25), 0.46),
-  hexagon: () => roundedPolygon(regular(6, 1.06), 0.3),
-  // a cloud: bumps on top, a calmer base
-  cloud: () => {
-    const c: [number, number, number][] = [[-0.66, 0.16, 0.56], [-0.24, -0.3, 0.64], [0.34, -0.26, 0.6], [0.7, 0.18, 0.52], [0.02, 0.32, 0.7]];
-    return polar((a) => unionRay(c, a), 480);
-  },
-  // a drop with its soft tip up
-  droplet: () =>
-    Array.from({ length: 240 }, (_, i) => {
-      const t = (i / 240) * TAU;
-      return [Math.sin(t) * Math.sin(t / 2) ** 1.3, -Math.cos(t) * 1.15] as Pt;
-    }),
-  // wider at the bottom than at the top
-  egg: () => polar(() => 1).map(([x, y]) => [x * (0.8 + 0.1 * y), y * 1.08] as Pt),
-  bar: () => stadium(0.62, 1.9),
-  play: () => roundedPolygon(regular(3, 1.2, TAU / 4), 0.42),
+  // a river stone: wider than tall, a little fuller on the right
+  pebble: () => polar(series([0.9328, 0.0221, 0.01, -0.0585, 0.0325, -0.0297, 0.0163, -0.0015, -0.0002])),
+  // a superellipse between a circle and a square
+  squircle: () => polar((a) => ((Math.abs(Math.sin(a)) / 0.959) ** 4.179 + (Math.abs(Math.cos(a)) / 0.9552) ** 4.179) ** (-1 / 4.179)),
+  capsule: () => stadium(2.0778, 1.2438),
+  triangle: () => roundedPolygon([[0, -1.5296], [1.2656, 0.647], [-1.2656, 0.647]], 0.3402),
+  // flat on top and bottom, a corner on each side
+  hexagon: () => roundedPolygon([[-0.5401, -0.9368], [0.5401, -0.9368], [1.0802, 0], [0.5401, 0.9368], [-0.5401, 0.9368], [-1.0802, 0]], 0.2598),
+  // a cloud: five round bumps
+  cloud: () => polar((a) => unionRay([[0.4723, 0.1392, 0.4949], [0.03, 0.2334, 0.6002], [-0.4322, 0.139, 0.535], [-0.2296, -0.3544, 0.4792], [0.3097, -0.2956, 0.4386]], a), 1440),
+  // a drop, its soft tip up
+  droplet: () => polar(cosines([0.7341, -0.1584, 0.1602, 0.0675, 0.0383, 0.0278, 0.0236, 0.0189, 0.014, 0.0109, 0.0095, 0.0083, 0.0067, 0.0055, 0.005, 0.0044, 0.0038, 0.0032, 0.003, 0.0027, 0.0024]), 1440),
+  egg: () => polar(series([0.8993, -0.0294, -0.0022, 0.0888, -0.0056, 0.0221, -0.0024, 0.013, -0.0016])),
+  // a hexagon standing on a corner
+  hexa: () => roundedPolygon(regular(6, 1.0483, -0.0273), 0.3179),
+  // the play triangle, pointing up and a little to the right
+  play: () => roundedPolygon(regular(3, 1.3965, 0.104).map(([x, y]) => [x, y * 1.0083] as Pt), 0.277),
+  // the stem of a "!": round, wider at the top
+  stem: () => taper(0.131, 0.085, 0.84),
 };
 
-/** eyes on a triangle or a drop sit lower and closer, where the shape is wide */
-export const FACE: Record<Shape, FaceSpot> = {
-  circle: { x: 0, y: 0, s: 1 },
-  pebble: { x: 0, y: 0.03, s: 0.98 },
-  squircle: { x: 0, y: 0, s: 1 },
-  capsule: { x: 0.06, y: 0.12, s: 0.82 },
-  triangle: { x: 0, y: 0.34, s: 0.74 },
-  hexagon: { x: 0, y: 0.02, s: 0.96 },
-  cloud: { x: 0, y: 0.1, s: 0.9 },
-  droplet: { x: 0, y: 0.32, s: 0.8 },
-};
-
-const isShape = (f: Figure): f is Shape => (SHAPES as readonly string[]).includes(f);
 const cache = new Map<Figure, Contour>();
 
-/** the contour of a shape (at the area of a unit circle) or a figure (at its own size), centered */
+/** a shape's or figure's contour, centered on its box */
 export function shapeContour(fig: Figure): Contour {
   const hit = cache.get(fig);
   if (hit) return hit;
   const c = resample(OUTLINES[fig](), BODY_POINTS);
   const b = bounds(c);
   const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
-  const k = isShape(fig) ? Math.sqrt(Math.PI / polygonArea(c)) : 1;
   for (let i = 0; i < BODY_POINTS; i++) {
-    c.x[i] = (c.x[i] - cx) * k;
-    c.y[i] = (c.y[i] - cy) * k;
+    c.x[i] -= cx;
+    c.y[i] -= cy;
   }
   cache.set(fig, c);
   return c;
+}
+
+const RAYS = 128;
+const reach = new Map<Shape, Float64Array>();
+
+/** how far the shape's edge is from its center along an angle (0 = up, clockwise), in body radii */
+export function edgeAt(shape: Shape, angle: number): number {
+  let table = reach.get(shape);
+  if (!table) {
+    const c = shapeContour(shape);
+    const n = c.x.length;
+    table = new Float64Array(RAYS);
+    for (let i = 0; i < RAYS; i++) {
+      const a = (i / RAYS) * TAU, dx = Math.sin(a), dy = -Math.cos(a);
+      let best = 0;
+      for (let k = 0; k < n; k++) {
+        const x1 = c.x[k], y1 = c.y[k], x2 = c.x[(k + 1) % n], y2 = c.y[(k + 1) % n];
+        const ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex;
+        if (Math.abs(den) < 1e-12) continue;
+        const t = (x1 * ey - y1 * ex) / den, u = (x1 * dy - y1 * dx) / den;
+        if (t > 0 && u >= -1e-9 && u <= 1 + 1e-9) best = Math.max(best, t);
+      }
+      table[i] = best;
+    }
+    reach.set(shape, table);
+  }
+  const f = ((angle / TAU) * RAYS) % RAYS;
+  const i = Math.floor(f < 0 ? f + RAYS : f);
+  const u = (f < 0 ? f + RAYS : f) - i;
+  return table[i] * (1 - u) + table[(i + 1) % RAYS] * u;
 }

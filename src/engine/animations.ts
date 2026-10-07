@@ -1,10 +1,11 @@
-// The animations. Each one is a function of its own time (0..dur) that says how the
-// body moves, which figure it turns into, what the eyes do, and which extra dots and
-// trails show. Every animation starts and ends as the plain blob, so they chain
-// without jumps and a cycle loops seamlessly.
+// The animations. Each one is a function of its own time (0..dur) that says what
+// the blob turns into and does: its figure, size and place, its eyes, the extra
+// dots, a gap cut into the body, and colored lines around it. Clips hold their
+// look until the next one takes over; motion.ts crossfades between them.
 
-import type { Expression } from './face';
-import { clamp, ease, lerp, smooth, TAU } from './math';
+import type { Expression, Face } from './face';
+import { STATE_EYES } from './face';
+import { clamp, ease, lerp, mod, smooth, TAU } from './math';
 import { hash } from './prng';
 import type { Figure } from './shapes';
 
@@ -26,17 +27,20 @@ export interface PartSpec {
   color: string | null;
 }
 
-/** stroked lines: the play trail, orbit rings, the comet's tail. TRAIL_POINTS points each. */
+/** colored lines: the play ribbon, orbit rings, the comet's tail. TRAIL_POINTS points each. */
 export interface TrailSpec {
   pts: [number, number][];
-  color: string;
+  /** a gradient along the line, start to end */
+  colors: [string, string, string];
   width: number;
   alpha: number;
+  /** drawn in front of the body (true) or behind it */
+  front: boolean;
 }
 
 export const PART_SLOTS = 3;
-export const TRAIL_SLOTS = 5;
-export const TRAIL_POINTS = 20;
+export const TRAIL_SLOTS = 12;
+export const TRAIL_POINTS = 18;
 
 export interface Pose {
   /** body units (the body is ~2 across); y down */
@@ -44,230 +48,218 @@ export interface Pose {
   ty: number;
   sx: number;
   sy: number;
-  /** overall size of the body and its eyes */
+  /** overall size of the body */
   scale: number;
-  /** radians */
+  /** radians, clockwise */
   rot: number;
   /** 0 squashes around the center, 1 around the bottom */
   anchor: number;
-  /** a ripple around the outline: amplitude, number of lobes, phase */
-  wob: number;
-  wobK: number;
-  wobP: number;
-  /** where the eyes look (-1..1) and how much the animation takes over the gaze */
-  lookX: number;
-  lookY: number;
-  lookW: number;
-  /** eye openness, both and per eye (1 open, 0 shut) */
-  open: number;
-  openL: number;
-  openR: number;
-  eyeScale: number;
-  eyeAlpha: number;
+  /** extra head turn for the eyes: yaw (to the right) and pitch (down), radians */
+  yaw: number;
+  pitch: number;
+  /** eyes the animation sets, and how far they take over from the expression */
+  eyes: Face | null;
+  eyesW: number;
   expr: Expression | null;
   exprW: number;
+  eyeAlpha: number;
+  /** extra closing of the eyes (1 = shut), on top of the blinks */
+  shut: number;
   /** the figure the body turns into, and how far */
   fig: Figure | null;
   figW: number;
+  /** a round gap cut into the body (radius 0 = none) */
+  holeX: number;
+  holeY: number;
+  holeR: number;
   parts: PartSpec[];
   trails: TrailSpec[];
 }
 
 export const rest = (): Pose => ({
-  tx: 0, ty: 0, sx: 1, sy: 1, scale: 1, rot: 0, anchor: 1, wob: 0, wobK: 3, wobP: 0,
-  lookX: 0, lookY: 0, lookW: 0, open: 1, openL: 1, openR: 1, eyeScale: 1, eyeAlpha: 1,
-  expr: null, exprW: 0, fig: null, figW: 0, parts: [], trails: [],
+  tx: 0, ty: 0, sx: 1, sy: 1, scale: 1, rot: 0, anchor: 0, yaw: 0, pitch: 0,
+  eyes: null, eyesW: 0, expr: null, exprW: 0, eyeAlpha: 1, shut: 0,
+  fig: null, figW: 0, holeX: 0, holeY: 0, holeR: 0, parts: [], trails: [],
 });
 
-/** 0 at both ends of the clip, 1 in between: rises over `a` seconds and falls over `b` */
-const hold = (t: number, d: number, a: number, b = a) => ease.inOut(clamp(Math.min(t / a, (d - t) / b), 0, 1));
+// ---------------------------------------------------------------- colors
 
-/** a spring settling from 0 to 1 over u in 0..1 */
-const spring = (u: number) => (u <= 0 ? 0 : u >= 1 ? 1 : 1 - Math.exp(-6 * u) * Math.cos(u * 12));
+/** a pastel hue (55% saturation, 62% lightness) as hex */
+function pastel(h: number): string {
+  const s = 0.55, l = 0.62;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return '#' + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+}
+const ramp = (h0: number, span: number): [string, string, string] => [pastel(mod(h0, 360)), pastel(mod(h0 + span / 2, 360)), pastel(mod(h0 + span, 360))];
 
-/** a bump that rises and falls once over [a, b] */
-const bump = (t: number, a: number, b: number) => (t <= a || t >= b ? 0 : Math.sin((Math.PI * (t - a)) / (b - a)) ** 2);
+// ---------------------------------------------------------------- helpers
 
-/** eyes fade out as fast as the body starts turning into something without eyes */
-const eyesOut = (w: number) => 1 - smooth(clamp(w * 2.2, 0, 1));
+/** 0 before a, 1 after b, eased in between */
+const step = (t: number, a: number, b: number) => ease.inOut(clamp((t - a) / (b - a), 0, 1));
 
-const RAINBOW = ['#a855f7', '#3b82f6', '#ec4899', '#22c55e', '#f59e0b'];
+/** a spring that settles at 1, overshooting a little */
+const pop = (u: number) => (u <= 0 ? 0 : u >= 1 ? 1 : 1 - Math.exp(-7 * u) * Math.cos(u * 11));
+
+/** points around a circle of radius r tilted in 3D, from angle a0 over `span` radians; z tells front from back */
+function arc3d(r: number, tiltAxis: number, tilt: number, a0: number, span: number, cx = 0, cy = 0): { pts: [number, number][]; z: number[] } {
+  const pts: [number, number][] = [];
+  const z: number[] = [];
+  const ca = Math.cos(tiltAxis), sa = Math.sin(tiltAxis), ct = Math.cos(tilt), st = Math.sin(tilt);
+  for (let i = 0; i < TRAIL_POINTS; i++) {
+    const a = a0 + (span * i) / (TRAIL_POINTS - 1);
+    // a circle in the screen plane, squashed by the tilt, then turned by the axis
+    const x0 = r * Math.cos(a), y0 = r * Math.sin(a) * ct, z0 = r * Math.sin(a) * st;
+    pts.push([cx + x0 * ca - y0 * sa, cy + x0 * sa + y0 * ca]);
+    z.push(z0);
+  }
+  return { pts, z };
+}
+
+/** split a 3D arc into the part behind the body and the part in front, as two trails */
+function halves(arc: { pts: [number, number][]; z: number[] }, colors: [string, string, string], width: number, alpha: number): TrailSpec[] {
+  const fill = (keep: (z: number) => boolean): [number, number][] | null => {
+    const kept = arc.pts.filter((_, i) => keep(arc.z[i]));
+    if (kept.length < 2) return null;
+    // resample the kept run to the full point count, so every trail keeps its structure
+    return Array.from({ length: TRAIL_POINTS }, (_, i) => kept[Math.round((i / (TRAIL_POINTS - 1)) * (kept.length - 1))]);
+  };
+  const b = fill((z) => z < 0), f = fill((z) => z >= 0);
+  return [
+    { pts: b ?? arc.pts, colors, width, alpha: b ? alpha : 0, front: false },
+    { pts: f ?? arc.pts, colors, width, alpha: f ? alpha : 0, front: true },
+  ];
+}
 
 type ClipFn = (t: number, d: number, seed: number) => Partial<Pose>;
 
-/** the "!" made of the body (the stem) and a dot, tilted by rot */
-function exclamation(w: number, rot: number, dotBounce = 0): Partial<Pose> {
-  const stem = -0.28, dot = 0.86 + dotBounce;
-  const s = Math.sin(rot), c = Math.cos(rot);
+/** the "!": the stem (the body) and its dot below, leaning by rot, the stem's center at (x, y) */
+function exclamation(x: number, y: number, rot: number, gap: number, dotR: number): Partial<Pose> {
   return {
-    fig: 'bar',
-    figW: w,
-    scale: lerp(1, 0.58, w),
+    fig: 'stem',
+    figW: 1,
     rot,
-    anchor: 0,
-    tx: -stem * s * w,
-    ty: stem * c * w,
-    eyeAlpha: eyesOut(w),
-    parts: [{ x: -dot * s * w, y: dot * c * w, r: 0.24 * w, alpha: smooth(clamp(w * 1.5 - 0.3, 0, 1)), color: null }],
+    tx: x,
+    ty: y,
+    eyeAlpha: 0,
+    parts: [{ x: x - gap * Math.sin(rot), y: y + gap * Math.cos(rot), r: dotR, alpha: 1, color: null }],
   };
-}
-
-/** points along an ellipse, for orbit rings: center, radii, turn of the ellipse, start angle */
-function ring(rx: number, ry: number, turn: number, phase: number): [number, number][] {
-  const pts: [number, number][] = [];
-  const ct = Math.cos(turn), st = Math.sin(turn);
-  for (let i = 0; i < TRAIL_POINTS; i++) {
-    const a = phase + (i / (TRAIL_POINTS - 1)) * TAU;
-    const x = rx * Math.cos(a), y = ry * Math.sin(a);
-    pts.push([x * ct - y * st, x * st + y * ct]);
-  }
-  return pts;
 }
 
 const CLIPS: Record<Anim, ClipFn> = {
   // breathing, blinks and glances come from underneath (motion.ts)
   idle: () => ({}),
 
-  // shrinks to a dot and two more appear: the "typing" dots
-  thinking: (t, d) => {
-    const w = hold(t, d, 0.4, 0.4);
-    const beat = (k: number) => Math.sin(TAU * (t * 1.6 - k * 0.18)) * 0.5 + 0.5;
-    const size = (k: number) => 0.27 * (1 + 0.16 * beat(k) * w);
-    const fade = (k: number) => lerp(1, 0.45 + 0.55 * beat(k), w);
-    const gap = 0.78 * w;
+  // three dots; one at a time grows and darkens: right, left, middle, and again
+  thinking: (t) => {
+    const order = [2, 0, 1];
+    const k = Math.floor((t + 0.23) / 0.5);
+    const into = smooth((t + 0.23 - k * 0.5) / 0.13);
+    const now = order[mod(k, 3)], before = order[mod(k - 1, 3)];
+    const act = (j: number) => (j === now ? (k === 0 ? 1 : into) : 0) + (j === before && k > 0 ? 1 - into : 0);
+    const r = (j: number) => lerp(0.164, 0.207, act(j));
+    const o = (j: number) => lerp(0.55, 1, act(j));
     return {
       fig: 'circle',
-      figW: w,
-      scale: lerp(1, size(1), w),
-      eyeAlpha: eyesOut(w),
+      figW: 1,
+      scale: r(1),
+      eyeAlpha: 0,
       parts: [
-        { x: -gap, y: 0, r: size(0) * smooth(w), alpha: smooth(w) * fade(0), color: null },
-        { x: gap, y: 0, r: size(2) * smooth(w), alpha: smooth(w) * fade(2), color: null },
+        { x: -0.555, y: 0, r: r(0), alpha: o(0), color: null },
+        { x: 0.54, y: 0, r: r(2), alpha: o(2), color: null },
       ],
     };
   },
 
-  // one eye closes, the head tilts a little
-  wink: (t, d) => {
-    const p = bump(t, 0.2 * d, 0.85 * d);
-    return { openR: 1 - p, rot: 0.08 * p, expr: 'happy', exprW: 0.35 * p, lookW: 0 };
-  },
+  // the right eye closes into a line
+  wink: () => ({ eyes: STATE_EYES.wink, eyesW: 1 }),
 
-  // the eyes open wide, the body lifts
-  wide: (t, d) => {
-    const w = hold(t, d, 0.25, 0.45);
-    return { expr: 'surprised', exprW: w, eyeScale: 1 + 0.16 * w, sy: 1 + 0.05 * w, sx: 1 - 0.03 * w, ty: -0.05 * w };
-  },
+  // big eyes, looking down and to the right
+  wide: () => ({ eyes: STATE_EYES.wide, eyesW: 1 }),
 
-  // a tilted "!", shaking
+  // a leaning "!" slides to the right, waits, and comes back
   alert: (t, d) => {
-    const w = hold(t, d, 0.4, 0.4);
-    const shake = 0.07 * Math.sin(TAU * t * 3.2) * w;
-    return exclamation(w, -0.32 * w + shake);
+    const k = d / 2.4;
+    const x = lerp(lerp(-0.07, 0.73, step(t, 0.5 * k, 1.4 * k)), 0.1, step(t, 1.6 * k, 2 * k));
+    return exclamation(x, -0.33, 0.305, 0.6, 0.12);
   },
 
-  // a badge pops on the top right, the eyes look at it
-  notification: (t, d) => {
-    const w = hold(t, d, 0.3, 0.4);
-    const pop = spring(clamp((t - 0.15 * d) / (0.45 * d), 0, 1)) * hold(t, d, 0.15, 0.35);
-    const squash = bump(t, 0.12 * d, 0.32 * d);
+  // a blue badge pops in a gap at the top right; the eyes look away
+  notification: (t) => {
+    const p = pop(t / 0.3);
     return {
-      lookX: 0.9,
-      lookY: -0.9,
-      lookW: w,
-      sy: 1 - 0.05 * squash,
-      sx: 1 + 0.04 * squash,
-      parts: [{ x: 0.74, y: -0.74, r: 0.22 * pop, alpha: clamp(pop * 3, 0, 1), color: '#3b82f6' }],
+      eyes: STATE_EYES.notification,
+      eyesW: 1,
+      holeX: 0.75,
+      holeY: -0.67,
+      holeR: 0.205 * p,
+      parts: [{ x: 0.75, y: -0.67, r: 0.15 * p, alpha: clamp(p * 4, 0, 1), color: '#2496e8' }],
     };
   },
 
-  // an upright "!", its dot bouncing
-  exclaim: (t, d) => {
-    const w = hold(t, d, 0.4, 0.4);
-    return exclamation(w, 0, -0.1 * Math.abs(Math.sin(TAU * t * 1.4)) * w);
-  },
+  // an upright "!"
+  exclaim: () => exclamation(0, -0.215, 0, 0.745, 0.11),
 
-  // shrinks to a small dot that breathes
-  sleep: (t, d) => {
-    const w = hold(t, d, 0.5, 0.5);
-    const b = Math.sin(TAU * t * 0.8);
-    return { scale: lerp(1, 0.16 * (1 + 0.14 * b), w), anchor: 0, ty: 0.15 * w, eyeAlpha: eyesOut(w) };
-  },
+  // a small dot bobbing up and down
+  sleep: (t) => ({ fig: 'circle', figW: 1, scale: 0.16, ty: 0.11 - 0.19 * Math.cos((TAU * (t - 0.47)) / 0.6), eyeAlpha: 0 }),
 
-  egg: (t, d) => {
-    const w = hold(t, d, 0.35, 0.4);
-    const wob = Math.exp(-4 * (t / d)) * Math.sin(t * 16);
-    return { fig: 'egg', figW: w, sx: 1 + 0.04 * wob * w, sy: 1 - 0.04 * wob * w };
-  },
+  egg: () => ({ fig: 'egg', figW: 1, eyes: STATE_EYES.egg, eyesW: 1 }),
 
-  hexagon: (t, d) => {
-    const w = hold(t, d, 0.35, 0.4);
-    return { fig: 'hexagon', figW: w, rot: 0.18 * Math.sin((Math.PI * t) / d) * w };
-  },
+  hexagon: () => ({ fig: 'hexa', figW: 1, eyes: STATE_EYES.hexa, eyesW: 1 }),
 
-  // a play triangle with a ribbon of colors behind it
+  // a play triangle, a ribbon of four colored lines going around it
+  // the ribbon runs on a narrow tilted orbit: in front from the top right to the bottom left, then back behind
   play: (t, d) => {
-    const w = hold(t, d, 0.35, 0.45);
-    const trails: TrailSpec[] = [0, 1, 2].map((k) => {
-      const pts: [number, number][] = [];
-      for (let i = 0; i < TRAIL_POINTS; i++) {
-        const u = i / (TRAIL_POINTS - 1);
-        const x = -0.55 - 1.6 * u * w;
-        const y = 0.28 + (k - 1) * 0.16 + 0.12 * Math.sin(TAU * (u * 1.2 - t * 1.4) + k) * u;
-        pts.push([x, y]);
-      }
-      return { pts, color: RAINBOW[k], width: 0.13, alpha: smooth(w) * 0.95 };
-    });
-    return { fig: 'play', figW: w, rot: -0.35 * w, ty: -0.06 * Math.sin(TAU * t * 1.2) * w, trails };
+    const w = clamp(t / 0.15, 0, 1) * clamp((d - t) / 0.2, 0, 1);
+    const head = (Math.PI * (t - 0.1)) / 1.05;
+    const trails = [0, 1, 2, 3].flatMap((k) => halves(arc3d(1.1 + 0.15 * k, -0.5, 1.45, head - 1.55, 1.55, 0.02, 0.05), ramp(95 + 62 * k, 100), 0.05, w));
+    return { fig: 'play', figW: 1, eyes: STATE_EYES.play, eyesW: 1, trails };
   },
 
-  // colored rings turn around the body
+  // the triangle spins while six rings turn around it
   orbit: (t, d) => {
-    const w = hold(t, d, 0.5, 0.5);
-    const trails: TrailSpec[] = RAINBOW.map((color, k) => ({
-      pts: ring(1.5 * lerp(0.6, 1, w), 0.42, (k * Math.PI) / 5 + t * 0.35, t * 2.4 + k),
-      color,
-      width: 0.07,
-      alpha: smooth(w) * 0.9,
-    }));
-    return { trails, ty: -0.04 * Math.sin(TAU * t * 0.6) * w };
-  },
-
-  // shrinks, then bursts into bits and comes back
-  burst: (t, d, seed) => {
-    const u = t / d;
-    const shrink = smooth(clamp(u / 0.3, 0, 1)) * (1 - smooth(clamp((u - 0.42) / 0.3, 0, 1)));
-    const fly = clamp((u - 0.36) / 0.4, 0, 1);
-    const back = spring(clamp((u - 0.42) / 0.5, 0, 1));
-    const scale = u < 0.42 ? lerp(1, 0.22, shrink) : lerp(0.22, 1, back);
-    const parts: PartSpec[] = [0, 1, 2].map((k) => {
-      const a = (k / 3) * TAU + 0.5 + hash(seed, k) * 0.6;
-      const r = 1.5 * ease.out(fly);
-      return { x: Math.sin(a) * r, y: -Math.cos(a) * r, r: 0.14 * (1 - fly), alpha: fly > 0 && fly < 1 ? 1 - fly : 0, color: null };
+    const trails = [0, 1, 2, 3, 4, 5].flatMap((k) => {
+      const w = smooth((t - 0.15 - 0.08 * k) / 0.25) * clamp((d - t) / 0.3, 0, 1);
+      const axis = (k * Math.PI) / 6 + 0.3 * t;
+      const colors = ramp(4 + 60 * k, 62);
+      const back = arc3d(1.37, axis, 1.25, Math.PI, Math.PI, 0, 0.03);
+      const front = arc3d(1.37, axis, 1.25, 0, Math.PI, 0, 0.03);
+      return [
+        { pts: back.pts, colors, width: 0.055, alpha: w, front: false },
+        { pts: front.pts, colors, width: 0.055, alpha: w, front: true },
+      ];
     });
-    return { scale, anchor: 0, eyeAlpha: eyesOut(1 - scale), parts };
+    const spin = smooth(t / 0.3) * smooth((d - t) / 0.4);
+    const a = -9.1 * t * spin;
+    return { fig: 'play', figW: 1, eyes: STATE_EYES.play, eyesW: 1, rot: a, yaw: -a * 0.5, trails };
   },
 
-  // shrinks to a dot that loops around with a tail
+  // shrinks to a dot that pulls in grey bits, then bursts back
+  burst: (t, d, seed) => {
+    const k = d / 2.6;
+    const back = step(t, 1.75 * k, 2.1 * k);
+    const parts: PartSpec[] = [0, 1, 2].map((i) => {
+      // each slot pulls in a bit every 0.45 s, from a seeded direction
+      const n = Math.floor((t - 0.1 - 0.15 * i) / 0.45);
+      const u = (t - 0.1 - 0.15 * i - n * 0.45) / 0.45;
+      const live = n >= 0 && t < 1.55 * k;
+      const a = hash(seed, i * 31 + n) * TAU;
+      const r = lerp(0.55, 0.08, ease.in(u));
+      return { x: Math.sin(a) * r, y: -Math.cos(a) * r, r: lerp(0.04, 0.07, u), alpha: live ? smooth(u * 4) * (1 - smooth((u - 0.85) / 0.15)) : 0, color: null };
+    });
+    return { fig: 'circle', figW: 1 - back, scale: lerp(0.165, 1, back), eyeAlpha: back, parts };
+  },
+
+  // a tiny dot with a rainbow tail circling it, in front and behind
   comet: (t, d) => {
-    const w = hold(t, d, 0.35, 0.35);
-    const u = clamp((t - 0.3) / (d - 0.6), 0, 1);
-    const at = (v: number): [number, number] => {
-      const a = TAU * ease.inOut(clamp(v, 0, 1));
-      return [1.15 * Math.sin(a), -0.55 * (1 - Math.cos(a))];
-    };
-    const [x, y] = at(u);
-    const pts: [number, number][] = [];
-    for (let i = 0; i < TRAIL_POINTS; i++) pts.push(at(u - (i / (TRAIL_POINTS - 1)) * 0.22));
-    const moving = u > 0 && u < 1 ? 1 : 0;
-    return {
-      scale: lerp(1, 0.24, w),
-      anchor: 0,
-      tx: x,
-      ty: y,
-      eyeAlpha: eyesOut(w),
-      trails: [{ pts, color: '#f472b6', width: 0.16, alpha: w * moving * 0.9 }],
-    };
+    const k = d / 2.4;
+    const back = step(t, 1.85 * k, 2.05 * k);
+    const on = smooth((t - 0.12) / 0.15) * (1 - smooth((t - 1.8 * k) / (0.12 * k)));
+    // the head runs in front from the bottom right to the top left, then behind, one turn every 1.65 s
+    const head = 2.2 + ((t - 0.27) * TAU) / 1.65;
+    const trails = [0, 1, 2, 3].flatMap((i) => halves(arc3d(0.82, 0.54, 1.45, head - 1.3, 1.3, 0, 0.02 + 0.04 * (i - 1.5)), ramp(4 + 88 * i, 85), 0.095, on));
+    return { fig: 'circle', figW: 1 - back, scale: lerp(0.13, 1, back), eyeAlpha: back, ty: 0.02 * (1 - back), trails };
   },
 };
 
@@ -277,7 +269,6 @@ export function clipPose(anim: Anim, t: number, d: number, seed: number): Pose {
 
 /** a moment that shows what an animation does, for thumbnails */
 export const SHOW_AT: Record<Anim, number> = {
-  idle: 0, thinking: 0.5, wink: 0.5, wide: 0.45, alert: 0.5, notification: 0.6, exclaim: 0.5,
-  sleep: 0.5, egg: 0.5, hexagon: 0.5, play: 0.5, orbit: 0.5, burst: 0.45, comet: 0.42,
+  idle: 0, thinking: 0.3, wink: 0.5, wide: 0.5, alert: 0.5, notification: 0.6, exclaim: 0.5,
+  sleep: 0.35, egg: 0.5, hexagon: 0.5, play: 0.45, orbit: 0.5, burst: 0.4, comet: 0.35,
 };
-
