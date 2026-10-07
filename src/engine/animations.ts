@@ -270,5 +270,5 @@ export function clipPose(anim: Anim, t: number, d: number, seed: number): Pose {
 /** a moment that shows what an animation does, for thumbnails */
 export const SHOW_AT: Record<Anim, number> = {
   idle: 0, thinking: 0.3, wink: 0.5, wide: 0.5, alert: 0.5, notification: 0.6, exclaim: 0.5,
-  sleep: 0.35, egg: 0.5, hexagon: 0.5, play: 0.45, orbit: 0.5, burst: 0.4, comet: 0.35,
+  sleep: 0.35, egg: 0.5, hexagon: 0.5, play: 0.45, orbit: 0.5, burst: 0.2, comet: 0.17,
 };

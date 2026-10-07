@@ -5,10 +5,56 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_STATE } from '../src/engine';
-import { page } from '../src/app/markup';
-import { STRINGS } from '../src/i18n/strings';
+import { STRINGS, type Strings } from '../src/i18n/strings';
 import { markSvg, stripSvg, wordmarkSvg } from '../src/brand';
+import { SITE } from '../src/ui/site';
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** the page shell: its head for search and sharing, a heading, and where React mounts */
+function page(S: Strings): string {
+  const url = `${SITE}${S.path}`;
+  return `<!doctype html>
+<html lang="${S.htmlLang}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script src="/lang.js"></script>
+    <script src="/theme-init.js"></script>
+    <title>${esc(S.title)}</title>
+    <meta name="description" content="${esc(S.description)}" />
+    <meta name="theme-color" content="#1b1c1e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f3f4f5" media="(prefers-color-scheme: light)" />
+    <link rel="canonical" href="${url}" />
+    <link rel="alternate" hreflang="en" href="${SITE}/" />
+    <link rel="alternate" hreflang="pt-BR" href="${SITE}/pt/" />
+    <link rel="alternate" hreflang="x-default" href="${SITE}/" />
+    <meta property="og:locale" content="${S.ogLocale}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Blob Avatar" />
+    <meta property="og:title" content="${esc(S.ogTitle)}" />
+    <meta property="og:description" content="${esc(S.ogDescription)}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:image" content="${SITE}/og/${S.lang}.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${esc(S.ogAlt)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <h1 class="sr-only">${esc(S.h1)}</h1>
+    <div id="root"></div>
+    <noscript><p style="padding: 24px; text-align: center">${esc(S.noscript)}</p></noscript>
+  </body>
+</html>
+`;
+}
 
 /** one page for both languages: nginx serves it for any missing path */
 function notFound() {
@@ -45,8 +91,8 @@ function notFound() {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = [
-  ['index.html', page(DEFAULT_STATE, STRINGS.en, STRINGS.pt)],
-  ['pt/index.html', page(DEFAULT_STATE, STRINGS.pt, STRINGS.en)],
+  ['index.html', page(STRINGS.en)],
+  ['pt/index.html', page(STRINGS.pt)],
   // the logo as files, for coleoni.com, the README and social images
   ['public/brand/blob.svg', wordmarkSvg({ height: 64 })],
   ['public/brand/blob-dark.svg', wordmarkSvg({ height: 64, letters: '#161616' })],

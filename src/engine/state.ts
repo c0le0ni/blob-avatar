@@ -27,18 +27,18 @@ export interface BlobState {
 
 /** the swatches offered in the app; any other color works too */
 export const PALETTE = [
-  { id: 'ink', hex: '#18181b' },
-  { id: 'brown', hex: '#8a5a3c' },
-  { id: 'red', hex: '#ef4444' },
-  { id: 'orange', hex: '#f28c28' },
-  { id: 'amber', hex: '#f5b400' },
+  { id: 'ink', hex: '#0a0a0c' },
+  { id: 'brown', hex: '#8b5e3c' },
+  { id: 'red', hex: '#e8483f' },
+  { id: 'orange', hex: '#f08a24' },
+  { id: 'amber', hex: '#f0b429' },
   { id: 'lime', hex: '#aefa0e' },
-  { id: 'turquoise', hex: '#14b8a6' },
-  { id: 'blue', hex: '#3b82f6' },
+  { id: 'turquoise', hex: '#2fbfa0' },
+  { id: 'blue', hex: '#3b93f0' },
   { id: 'purple', hex: '#8b5cf6' },
-  { id: 'pink', hex: '#ec4899' },
-  { id: 'grey', hex: '#a1a1aa' },
-  { id: 'cream', hex: '#f1efe7' },
+  { id: 'pink', hex: '#e152b0' },
+  { id: 'grey', hex: '#a3a3a3' },
+  { id: 'cream', hex: '#f1efe9' },
 ] as const;
 
 export const MAX_CLIPS = 24;

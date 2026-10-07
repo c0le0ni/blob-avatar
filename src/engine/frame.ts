@@ -51,6 +51,8 @@ export interface FrameInput {
   gaze?: [number, number] | null;
   /** the rest pose, eyes open: still pictures and reduced motion */
   still?: boolean;
+  /** how open the eyes are, 0..1, on top of the blinks (the intro opens them) */
+  open?: number;
 }
 
 /** a circle in the drawing, from body units */
@@ -101,7 +103,7 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
   for (const { face: f, w } of m.faces) if (w > 0.001) face = blendFace(face, f, Math.min(1, w));
   const [wy, wp] = still ? [0, 0] : input.gaze ? [input.gaze[0] * 0.32, input.gaze[1] * 0.26] : wander(t, state.seed, L);
   const yaw = wy + m.yaw, pitch = wp + m.pitch;
-  const open = (still ? 1 : blink(t, state.seed, L)) * (1 - clamp(m.shut, 0, 1));
+  const open = (still ? 1 : blink(t, state.seed, L)) * (1 - clamp(m.shut, 0, 1)) * clamp(input.open ?? 1, 0, 1);
   const eyeFill = autoEyeColor(state.color);
 
   const eye = (p: EyePose): Layer => {
