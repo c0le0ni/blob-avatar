@@ -16,8 +16,11 @@ const P = 4;
 const B = ['#....', '#....', '#....', '####.', '#...#', '#...#', '#...#', '####.'];
 const L = ['#', '#', '#', '#', '#', '#', '#', '#'];
 
-/** where the letters and the blob sit, in pixel columns */
-export const LAYOUT = { b1: 0, l: 6, blob: { x: 8.6, w: 7.8 }, b2: 17.4, cols: 22.4, rows: 8 };
+/**
+ * where the letters and the blob sit, in pixel columns: one column between the
+ * letters, and the o as wide as the bowl of the b (five columns, the x-height)
+ */
+export const LAYOUT = { b1: 0, l: 6, blob: { x: 8, w: 5 }, b2: 14, cols: 19, rows: 8 };
 
 function pixels(rows: string[], col: number): string {
   let d = '';
@@ -37,13 +40,11 @@ const LOGO_COLOR = '#aefa0e';
 const LOGO_EYES = '#141416';
 const R = 54;
 
-/** the o's body: a soft bean, a touch wider than tall and fuller at the bottom (200-unit drawing) */
+/** the o's body: a plain circle (200-unit drawing) */
 const logoBody: Contour = (() => {
   const pts: Pt[] = Array.from({ length: 360 }, (_, i) => {
     const a = (i / 360) * Math.PI * 2;
-    const x = Math.sin(a), y = -Math.cos(a);
-    const sag = y > 0 ? 1 + 0.08 * y : 1;
-    return [x * 1.06 * sag, (y > 0 ? y * (1 - 0.05 * y) : y) * 0.95];
+    return [Math.sin(a), -Math.cos(a)];
   });
   const c = resample(pts, 48);
   const b = bounds(c);
@@ -55,9 +56,12 @@ const logoBody: Contour = (() => {
   return c;
 })();
 
-/** a pixel eye: a square with barely rounded corners, squashed by a blink (open 1..0) */
+/** the body's width in the 200-unit drawing */
+const BODY_W = Math.max(...logoBody.x) - Math.min(...logoBody.x);
+
+/** a pixel eye, one pixel of the wordmark: a square with barely rounded corners, squashed by a blink (open 1..0) */
 function pixelEye(cx: number, open: number): Contour {
-  const s = 0.344 * R, r = 0.06 * 0.4 * R;
+  const s = BODY_W / LAYOUT.blob.w, r = 0.06 * 0.4 * R;
   const h = Math.max(s * 0.12, s * open);
   const cy = 0.06 * -R + 8 + (s - h) * 0.3;
   const c = make(16);
@@ -93,7 +97,7 @@ function logoAt(t: number | null) {
 export function blobBox() {
   const w = LAYOUT.blob.w * P;
   const x = LAYOUT.blob.x * P;
-  const k = w / 118;
+  const k = w / BODY_W;
   return { x, w, k, cx: x + w / 2 };
 }
 
