@@ -16,11 +16,11 @@ const P = 4;
 const B = ['#....', '#....', '#....', '####.', '#...#', '#...#', '#...#', '####.'];
 const L = ['#', '#', '#', '#', '#', '#', '#', '#'];
 
-/**
- * where the letters and the blob sit, in pixel columns: one column between the
- * letters, and the o as wide as the bowl of the b (five columns, the x-height)
- */
-export const LAYOUT = { b1: 0, l: 6, blob: { x: 8, w: 5 }, b2: 14, cols: 19, rows: 8 };
+/** the o's width, in pixel columns: a round blob, bigger than the bowl of the b (5 columns) */
+const O_W = 6;
+
+/** where the letters and the blob sit, in pixel columns, with one column between them */
+export const LAYOUT = { b1: 0, l: 6, blob: { x: 8, w: O_W }, b2: 9 + O_W, cols: 14 + O_W, rows: 8 };
 
 function pixels(rows: string[], col: number): string {
   let d = '';
@@ -59,9 +59,9 @@ const logoBody: Contour = (() => {
 /** the body's width in the 200-unit drawing */
 const BODY_W = Math.max(...logoBody.x) - Math.min(...logoBody.x);
 
-/** a pixel eye, one pixel of the wordmark: a square with barely rounded corners, squashed by a blink (open 1..0) */
+/** a pixel eye: a square with barely rounded corners, squashed by a blink (open 1..0) */
 function pixelEye(cx: number, open: number): Contour {
-  const s = BODY_W / LAYOUT.blob.w, r = 0.06 * 0.4 * R;
+  const s = 0.344 * R, r = 0.06 * 0.4 * R;
   const h = Math.max(s * 0.12, s * open);
   const cy = 0.06 * -R + 8 + (s - h) * 0.3;
   const c = make(16);
