@@ -8,6 +8,7 @@ import type { Strings } from '../i18n/strings';
 export const SITE = 'https://blob.coleoni.com';
 export const REPO = 'https://github.com/c0le0ni/blob-avatar';
 export const SKILLS = 'https://skills.coleoni.com';
+export const LOADERS = 'https://loaders.coleoni.com';
 export const COLEONI = 'https://coleoni.com';
 
 export function describe(s: BlobState, S: Strings): string {

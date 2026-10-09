@@ -12,7 +12,7 @@ import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
-import { describe, REPO, SKILLS, COLEONI } from './site';
+import { describe, REPO, SKILLS, LOADERS, COLEONI } from './site';
 import { Timeline } from './timeline';
 import { LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
@@ -160,8 +160,12 @@ export function App({ S }: { S: Strings }) {
             <span className="sr-only"> {S.newTab}</span>
           </a>
           <span aria-hidden>·</span>
-          <a href={SKILLS} rel="noopener" className="transition-colors hover:text-foreground">
+          <a href={S.lang === 'pt' ? `${SKILLS}/pt/` : SKILLS} rel="noopener" className="transition-colors hover:text-foreground">
             {S.skills}
+          </a>
+          <span aria-hidden>·</span>
+          <a href={S.lang === 'pt' ? `${LOADERS}/pt/` : LOADERS} rel="noopener" className="transition-colors hover:text-foreground">
+            Loaders
           </a>
         </footer>
       </div>
