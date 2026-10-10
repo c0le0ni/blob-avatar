@@ -1,43 +1,7 @@
-// The app's state: the avatar (kept in the address bar, so the page is always a
-// link to it), the theme, and the small notices.
+// The app's small shared state outside the editor: the theme and the notices.
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { DEFAULT_STATE, cloneState, type BlobState } from '../engine';
-import { fromHash, toHash } from '../engine/codec';
+import { useCallback, useSyncExternalStore } from 'react';
 import { resolved, setTheme, watchSystem } from '../app/theme';
-
-export type Edit = (f: (s: BlobState) => void) => void;
-
-export function useBlob() {
-  const [state, setState] = useState<BlobState>(() => (location.hash.length > 1 ? fromHash(location.hash) : cloneState(DEFAULT_STATE)));
-  // the avatar the page opened with is already what the address bar says
-  const opened = useRef(state);
-
-  useEffect(() => {
-    if (state === opened.current) return;
-    const id = window.setTimeout(() => history.replaceState(null, '', `#${toHash(state)}`), 150);
-    return () => clearTimeout(id);
-  }, [state]);
-
-  useEffect(() => {
-    const onHash = () => {
-      const h = location.hash.slice(1);
-      if (h) setState((prev) => (toHash(prev) === h ? prev : fromHash(h)));
-    };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
-
-  const edit: Edit = useCallback((f) => {
-    setState((prev) => {
-      const next = cloneState(prev);
-      f(next);
-      return next;
-    });
-  }, []);
-
-  return { state, edit };
-}
 
 // ---------------------------------------------------------------- theme
 
@@ -66,6 +30,8 @@ export function useTheme() {
 export interface Notice {
   id: number;
   text: string;
+  /** a button in the notice ("Undo"); a notice with one stays longer */
+  action?: { label: string; run: () => void };
 }
 
 let notice: Notice | null = null;
@@ -73,15 +39,24 @@ let noticeId = 0;
 let noticeTimer = 0;
 const noticeListeners = new Set<() => void>();
 
-/** a short notice at the bottom of the page ("Link copied") */
-export function toast(text: string) {
-  notice = { id: ++noticeId, text };
-  noticeListeners.forEach((f) => f());
+export function dismiss() {
   clearTimeout(noticeTimer);
-  noticeTimer = window.setTimeout(() => {
-    notice = null;
-    noticeListeners.forEach((f) => f());
-  }, 2200);
+  if (!notice) return;
+  notice = null;
+  noticeListeners.forEach((f) => f());
+}
+
+/** keep the notice up while the pointer or the focus is on it, and let it go after */
+export function holdNotice(on: boolean) {
+  clearTimeout(noticeTimer);
+  if (!on && notice) noticeTimer = window.setTimeout(dismiss, notice.action ? 5000 : 2200);
+}
+
+/** a short notice at the bottom of the page ("Link copied"), with an optional button */
+export function toast(text: string, action?: Notice['action']) {
+  notice = { id: ++noticeId, text, action };
+  noticeListeners.forEach((f) => f());
+  holdNotice(false);
 }
 
 export function useNotice() {
@@ -93,4 +68,3 @@ export function useNotice() {
     () => notice,
   );
 }
-

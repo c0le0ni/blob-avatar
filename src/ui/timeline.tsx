@@ -4,7 +4,10 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { type BlobState } from '../engine';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
-import { ALL, moveClip, removeClip, resizeClip, starts, type Cycles } from './cycles';
+import { ALL, NEW, moveClip, removeClip, resizeClip, starts } from './cycles';
+import type { Cycles } from './editor';
+import { gestureKey } from './history';
+import { toast } from './hooks';
 import type { Player } from './player';
 import { Button } from './primitives/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './primitives/select';
@@ -114,7 +117,9 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
     target.setPointerCapture(event.pointerId);
     const x0 = event.clientX;
     const d0 = clips[i].dur;
-    const move = (e: PointerEvent) => cycles.change((cs) => resizeClip(cs, i, d0 + (e.clientX - x0) / PX));
+    // the whole stretch is one undo step
+    const key = gestureKey('resize');
+    const move = (e: PointerEvent) => cycles.change((cs) => resizeClip(cs, i, d0 + (e.clientX - x0) / PX), key);
     const end = () => {
       target.removeEventListener('pointermove', move);
       target.removeEventListener('pointerup', end);
@@ -145,10 +150,10 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
       event.preventDefault();
       const to = Math.max(0, Math.min(clips.length - 1, i + step));
       focusNext.current = to;
-      cycles.change((cs) => moveClip(cs, i, to));
+      cycles.change((cs) => moveClip(cs, i, to), 'move');
     } else if (step && event.shiftKey) {
       event.preventDefault();
-      cycles.change((cs) => resizeClip(cs, i, cs[i].dur + step * 0.1));
+      cycles.change((cs) => resizeClip(cs, i, cs[i].dur + step * 0.1), `resize:${i}`);
     } else if (step) {
       event.preventDefault();
       list.current?.querySelectorAll<HTMLElement>('[data-clip] [data-main]')[Math.max(0, Math.min(clips.length - 1, i + step))]?.focus();
@@ -184,7 +189,7 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
                 </SelectItem>
               ))}
               <div role="separator" className="mx-1.5 my-1 h-px bg-border" />
-              <SelectItem value="new">
+              <SelectItem value={NEW}>
                 <span className="flex items-center gap-1.5">
                   <Plus aria-hidden className="size-3.5" />
                   {S.newCycle}
@@ -195,7 +200,7 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
           {cycles.active === ALL ? null : (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8 animate-pop-in touch:size-10" aria-label={S.deleteCycle} onClick={cycles.remove}>
+                <Button variant="ghost" size="icon" className="size-8 animate-pop-in touch:size-10" aria-label={S.deleteCycle} onClick={() => toast(S.cycleDeleted, { label: S.undo, run: cycles.remove() })}>
                   <Trash2 aria-hidden />
                 </Button>
               </TooltipTrigger>

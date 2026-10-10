@@ -150,8 +150,11 @@ const SWATCH = cn(
   'data-[on=true]:shadow-[inset_0_0_0_1px_var(--pulse-border-strong),0_0_0_2px_var(--pulse-surface),0_0_0_4px_var(--pulse-foreground)]',
 );
 
-/** the twelve colors and a way to any other */
-export function ColorSwatches({ value, onChange, S }: { value: string; onChange: (hex: string) => void; S: Strings }) {
+/**
+ * The twelve colors and a way to any other. A drag in the picker or a walk with the
+ * arrows comes with a key, so it makes one undo step.
+ */
+export function ColorSwatches({ value, onChange, S }: { value: string; onChange: (hex: string, key?: string) => void; S: Strings }) {
   const own = !PALETTE.some((p) => p.hex === value);
   const group = useRef<HTMLDivElement>(null);
 
@@ -161,7 +164,7 @@ export function ColorSwatches({ value, onChange, S }: { value: string; onChange:
     if (!step || !(event.target as HTMLElement).matches('[role="radio"]')) return;
     event.preventDefault();
     const next = (Math.max(0, at) + step + PALETTE.length) % PALETTE.length;
-    onChange(PALETTE[next].hex);
+    onChange(PALETTE[next].hex, 'swatches');
     group.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
   }
 
@@ -212,7 +215,7 @@ export function ColorSwatches({ value, onChange, S }: { value: string; onChange:
           <TooltipContent>{S.anyColor}</TooltipContent>
         </Tooltip>
         <PopoverContent side="bottom" align="end" collisionPadding={12} className="w-64 p-3">
-          <ColorPicker value={value} onChange={onChange} S={S} />
+          <ColorPicker value={value} onChange={(hex) => onChange(hex, 'picker')} S={S} />
         </PopoverContent>
       </Popover>
     </div>

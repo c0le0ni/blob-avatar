@@ -6,7 +6,7 @@ import { LiveSvg } from '../render/svg';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColorSwatches } from './color-picker';
-import type { Edit } from './hooks';
+import type { Edit } from './editor';
 import type { Mode } from './player';
 import { Segmented } from './primitives/segmented';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
@@ -22,8 +22,8 @@ const TILE = cn(
 
 const ART = 'block size-12 transition-transform duration-(--motion-slow) ease-out-expo group-hover/tile:scale-108 group-active/tile:scale-95 [&_svg]:block';
 
-/** a radio group of tiles: arrow keys move the choice, as radios do */
-function TileGroup<T extends string>({ label, values, value, onChange, children }: { label: string; values: readonly T[]; value: T; onChange: (v: T) => void; children: (v: T, on: boolean) => ReactNode }) {
+/** a radio group of tiles: arrow keys move the choice, as radios do (a walk with the arrows is one undo step) */
+function TileGroup<T extends string>({ label, values, value, onChange, children }: { label: string; values: readonly T[]; value: T; onChange: (v: T, key?: string) => void; children: (v: T, on: boolean) => ReactNode }) {
   const group = useRef<HTMLDivElement>(null);
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const cols = 4;
@@ -32,7 +32,7 @@ function TileGroup<T extends string>({ label, values, value, onChange, children 
     event.preventDefault();
     const at = values.indexOf(value);
     const next = Math.max(0, Math.min(values.length - 1, at + step));
-    onChange(values[next]);
+    onChange(values[next], label);
     group.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
   }
   return (
@@ -144,7 +144,7 @@ export function OptionsCard({ state, edit, mode, onAdd, S, className }: { state:
           />
           <div role="tabpanel" id={`panel-${tab}`} aria-label={S[tab]} className="min-h-0">
             {tab === 'shape' ? (
-              <TileGroup label={S.shape} values={SHAPES} value={state.shape} onChange={(v) => edit((s) => (s.shape = v))}>
+              <TileGroup label={S.shape} values={SHAPES} value={state.shape} onChange={(v, key) => edit((s) => (s.shape = v), key)}>
                 {(v, on) => (
                   <button key={v} type="button" role="radio" aria-checked={on} data-on={on} tabIndex={on ? 0 : -1} className={TILE} onClick={() => edit((s) => (s.shape = v))}>
                     <span className={ART} dangerouslySetInnerHTML={{ __html: shapes[v] }} />
@@ -153,7 +153,7 @@ export function OptionsCard({ state, edit, mode, onAdd, S, className }: { state:
                 )}
               </TileGroup>
             ) : tab === 'expression' ? (
-              <TileGroup label={S.expression} values={EXPRESSIONS} value={state.expression} onChange={(v) => edit((s) => (s.expression = v))}>
+              <TileGroup label={S.expression} values={EXPRESSIONS} value={state.expression} onChange={(v, key) => edit((s) => (s.expression = v), key)}>
                 {(v, on) => (
                   <button key={v} type="button" role="radio" aria-checked={on} data-on={on} tabIndex={on ? 0 : -1} className={TILE} onClick={() => edit((s) => (s.expression = v))}>
                     <span className={ART} dangerouslySetInnerHTML={{ __html: faces[v] }} />
@@ -163,7 +163,7 @@ export function OptionsCard({ state, edit, mode, onAdd, S, className }: { state:
               </TileGroup>
             ) : (
               <div className="animate-panel-in">
-                <ColorSwatches value={state.color} onChange={(hex) => edit((s) => (s.color = hex))} S={S} />
+                <ColorSwatches value={state.color} onChange={(hex, key) => edit((s) => (s.color = hex), key)} S={S} />
               </div>
             )}
           </div>

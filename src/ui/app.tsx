@@ -4,12 +4,14 @@ import { loopLength, type Anim } from '../engine';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
-import { addClip, useCycles } from './cycles';
+import { addClip } from './cycles';
+import { cyclesOf, useEditor } from './editor';
 import { ExportMenu } from './export-menu';
-import { useBlob, useNotice } from './hooks';
+import { holdNotice, dismiss, useNotice } from './hooks';
 import { runIntro } from './intro';
 import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
+import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
 import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
@@ -53,8 +55,32 @@ function Toaster() {
   return (
     <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
       {shown ? (
-        <div key={shown.id} className={cn('rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-foreground shadow-lg', notice ? 'animate-toast-in' : 'animate-toast-out')}>
+        <div
+          key={shown.id}
+          className={cn(
+            'flex items-center gap-3 rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-sm font-medium text-foreground shadow-lg',
+            shown.action && 'pointer-events-auto py-1.5 pr-1.5',
+            notice ? 'animate-toast-in' : 'animate-toast-out',
+          )}
+          onPointerEnter={() => holdNotice(true)}
+          onPointerLeave={() => holdNotice(false)}
+          onFocus={() => holdNotice(true)}
+          onBlur={() => holdNotice(false)}
+        >
           {shown.text}
+          {shown.action ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sm text-foreground"
+              onClick={() => {
+                shown.action?.run();
+                dismiss();
+              }}
+            >
+              {shown.action.label}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -67,8 +93,10 @@ const MODES = [
 ] as const;
 
 export function App({ S }: { S: Strings }) {
-  const { state, edit } = useBlob();
-  const cycles = useCycles(state, edit);
+  const { editor, doc } = useEditor();
+  const state = doc.blob;
+  const edit = editor.edit;
+  const cycles = cyclesOf(editor, doc.book);
   const [mode, setMode] = useState<Mode>('customize');
   const [player] = useState(() => new Player(state));
   const pendingSeek = useRef<number | null>(null);
