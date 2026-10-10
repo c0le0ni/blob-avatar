@@ -1,11 +1,12 @@
 import { ChevronDown, CodeXml, Copy, Download, Film, Image, Link, LoaderCircle, Sparkles, Spline } from 'lucide-react';
 import { useState } from 'react';
 import type { ComponentType, KeyboardEvent, ReactNode } from 'react';
-import { IDLE_CYCLE, type BlobState } from '../engine';
+import { IDLE_CYCLE, loopLength, type BlobState } from '../engine';
 import { toHash } from '../engine/codec';
 import { copyPng, copySvg, downloadAnimatedSvg, downloadGif, downloadPng, downloadSvg, type ExportOptions } from '../export';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
+import { GIF_LONG, gifFrames, secs } from './animate/format';
 import { ColorPicker } from './color-picker';
 import { toast } from './hooks';
 import type { Mode } from './player';
@@ -86,16 +87,31 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
   const spin = (id: string, Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>) =>
     busy === id ? <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin text-foreground-subtle" /> : <Icon aria-hidden className="size-4 shrink-0 text-foreground-subtle" />;
 
-  const row = (id: keyof typeof actions, Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, label: string, hint?: ReactNode, side?: ReactNode) => (
+  const row = (id: keyof typeof actions, Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, label: string, hint?: ReactNode, side?: ReactNode, note?: string) => (
     <div className="flex items-center">
-      <button type="button" data-item className={ITEM} disabled={!!busy && busy !== id} aria-busy={busy === id} onClick={actions[id]}>
-        {spin(id, Icon)}
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        {hint}
+      <button type="button" data-item className={cn(ITEM, note && 'items-start py-2')} disabled={!!busy && busy !== id} aria-busy={busy === id} onClick={actions[id]}>
+        <span className={cn('flex shrink-0', note && 'pt-0.5')}>{spin(id, Icon)}</span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            {hint}
+          </span>
+          {note ? <span className="text-2xs text-foreground-subtle">{note}</span> : null}
+        </span>
       </button>
       {side}
     </div>
   );
+
+  // a long cycle makes a heavy GIF: the row says how long and how many frames, and what stays light
+  const length = loopLength(moving);
+  const long = mode === 'animate' && length > GIF_LONG;
+  const gifHint =
+    busy === 'gif' ? (
+      <span className="font-mono text-2xs text-foreground-subtle tabular-nums">{Math.round(progress * 100)}%</span>
+    ) : long ? (
+      <span className="font-mono text-2xs whitespace-nowrap text-foreground-subtle tabular-nums">{S.gifFrames(secs(S, length), gifFrames(length))}</span>
+    ) : null;
 
   const copy = (id: 'copyPng' | 'copySvg', label: string) => (
     <Tooltip>
@@ -137,7 +153,7 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
         <PopoverContent role="dialog" aria-label={S.moreFormats} align="end" sideOffset={6} collisionPadding={8} className="flex max-h-[min(80vh,36rem)] w-72 max-w-[calc(100vw-1rem)] flex-col overflow-y-auto overscroll-contain p-1" onKeyDown={moveFocus}>
           {row('png', Image, S.downloadPng, null, copy('copyPng', S.copyImage))}
           {row('svg', Spline, S.downloadSvg, null, copy('copySvg', S.copySvg))}
-          {row('gif', Film, S.downloadGif, busy === 'gif' ? <span className="font-mono text-2xs text-foreground-subtle tabular-nums">{Math.round(progress * 100)}%</span> : null)}
+          {row('gif', Film, S.downloadGif, gifHint, null, long ? S.gifLighter : undefined)}
           {row('anim', Sparkles, S.downloadAnimSvg)}
           <Separator />
           <div className="flex flex-col gap-1 px-2.5 py-1.5">
