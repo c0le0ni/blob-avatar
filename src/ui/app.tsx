@@ -205,7 +205,7 @@ export function App({ S }: { S: Strings }) {
         <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 md:flex-row md:gap-4 md:px-5 md:pb-0">
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
             {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 py-4 md:py-0">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
               <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
               <StageToolbar
               S={S}
@@ -218,7 +218,7 @@ export function App({ S }: { S: Strings }) {
               onSettingsOpen={setSettingsOpen}
               keysOpen={keysOpen}
               onKeysOpen={setKeysOpen}
-              className="md:absolute md:top-2 md:right-0 md:z-10"
+              className="max-md:-mt-2 md:absolute md:top-2 md:right-0 md:z-10"
               />
             </div>
             {mode === 'animate' ? <Timeline state={state} cycles={cycles} player={player} S={S} className="w-full max-w-5xl animate-rise-in md:mb-1" /> : null}
