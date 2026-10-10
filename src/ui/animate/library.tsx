@@ -102,7 +102,7 @@ function Item({ anim, look, thumb, count, full, previewing, after, S, onAdd, onP
               <span className="text-xs font-medium text-pretty text-foreground">{name}</span>
               <span aria-hidden className="mt-0.5 flex items-center gap-1 font-mono text-2xs whitespace-nowrap text-foreground-subtle tabular-nums">
                 {secs(S, DEFAULT_DUR[anim])}
-                {count ? (
+                {count > 1 ? (
                   <>
                     <span>·</span>
                     <span>×{count}</span>
