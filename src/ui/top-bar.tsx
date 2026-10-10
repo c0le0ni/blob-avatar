@@ -2,12 +2,12 @@ import { Check, ChevronDown, Globe, Moon, Sun } from 'lucide-react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { STRINGS, type Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
-import { BlobWordmark, ColeoniLockup, ColeoniSymbol } from './brand';
+import { BlobWordmark, ColeoniLockup, ColeoniSymbol, GithubIcon } from './brand';
 import { useTheme } from './hooks';
 import { Button } from './primitives/button';
 import { Popover, PopoverContent, PopoverTrigger } from './primitives/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
-import { coleoniHome } from './site';
+import { REPO, coleoniHome } from './site';
 
 export function ThemeToggle({ S }: { S: Strings }) {
   const { theme, toggle } = useTheme();
@@ -48,7 +48,7 @@ export function LanguageMenu({ S }: { S: Strings }) {
           <Globe aria-hidden />
           <span className="sr-only">{S.language}: </span>
           <span className="font-medium">{S.lang.toUpperCase()}</span>
-          <ChevronDown aria-hidden className="size-3.5! text-foreground-subtle" />
+          <ChevronDown aria-hidden className="size-3.5! text-foreground-subtle max-sm:hidden" />
         </Button>
       </PopoverTrigger>
       <PopoverContent role="menu" aria-label={S.language} align="end" className="w-44 p-1" onKeyDown={moveFocus}>
@@ -81,6 +81,18 @@ export function LanguageMenu({ S }: { S: Strings }) {
   );
 }
 
+export function GithubLink({ S }: { S: Strings }) {
+  return (
+    <Button asChild variant="ghost" className="h-8 gap-1.5 px-2.5 touch:h-10">
+      <a href={REPO} target="_blank" rel="noopener noreferrer">
+        <GithubIcon className="size-4" />
+        <span className="max-sm:sr-only">{S.github}</span>
+        <span className="sr-only"> {S.newTab}</span>
+      </a>
+    </Button>
+  );
+}
+
 interface TopBarProps {
   S: Strings;
   center: ReactNode;
@@ -102,7 +114,7 @@ export function TopBar({ S, center, end, onWordmark, className }: TopBarProps) {
           <BlobWordmark onLive={onWordmark} />
         </a>
       </div>
-      <div className="absolute left-1/2 -translate-x-1/2 max-md:hidden">{center}</div>
+      <div className="absolute left-1/2 -translate-x-1/2 max-lg:hidden">{center}</div>
       <div className="ml-auto flex items-center gap-1">{end}</div>
     </header>
   );

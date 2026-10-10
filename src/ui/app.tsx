@@ -14,7 +14,7 @@ import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
 import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
 import { Timeline } from './timeline';
-import { LanguageMenu, ThemeToggle, TopBar } from './top-bar';
+import { GithubLink, LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
 function Stage({ player, label, small }: { player: Player; label: string; small: boolean }) {
   const host = useRef<HTMLDivElement>(null);
@@ -122,9 +122,10 @@ export function App({ S }: { S: Strings }) {
           center={<div data-intro="translateY(-6px)">{modeSwitch}</div>}
           end={
             <>
-              <div data-intro="translateY(-6px)" className="flex items-center gap-1">
+              <div data-intro="translateY(-6px)" className="flex items-center gap-0.5 sm:gap-1">
                 <ThemeToggle S={S} />
                 <LanguageMenu S={S} />
+                <GithubLink S={S} />
               </div>
               <div data-intro="translateY(-6px)" className="ml-1">
                 <ExportMenu state={state} mode={mode} S={S} />
@@ -132,7 +133,7 @@ export function App({ S }: { S: Strings }) {
             </>
           }
         />
-        <div data-intro="translateY(-4px)" className="flex justify-center px-3 pt-1 pb-2 md:hidden">
+        <div data-intro="translateY(-4px)" className="flex justify-center px-3 pt-1 pb-2 lg:hidden">
           {modeSwitch}
         </div>
         <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 md:flex-row md:gap-4 md:px-5 md:pb-0">

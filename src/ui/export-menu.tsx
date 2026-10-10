@@ -148,10 +148,11 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
 
   return (
     <div className="flex items-center">
-      <Button variant="primary" size="lg" className="rounded-r-none pr-2.5 pl-3" aria-busy={busy === main.id} disabled={!!busy} onClick={actions[main.id]}>
+      {/* under 400px the top bar is short of room, and the label hides from the eye */}
+      <Button variant="primary" size="lg" className="rounded-r-none pr-2.5 pl-3 max-[400px]:px-2.5" aria-busy={busy === main.id} disabled={!!busy} onClick={actions[main.id]}>
         {busy === main.id ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
         <span className="max-sm:hidden">{busy === 'gif' ? `${Math.round(progress * 100)}%` : main.label}</span>
-        <span className="sm:hidden">{busy === 'gif' ? `${Math.round(progress * 100)}%` : S.export}</span>
+        <span className={cn('sm:hidden', busy !== 'gif' && 'max-[400px]:sr-only')}>{busy === 'gif' ? `${Math.round(progress * 100)}%` : S.export}</span>
       </Button>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
