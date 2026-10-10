@@ -1,12 +1,13 @@
 import { Clapperboard, SlidersHorizontal } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MAX_CLIPS, loopLength, type Anim } from '../engine';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { DEFAULT_DUR, MAX_CLIPS, loopLength, type Anim } from '../engine';
 import { randomLook } from '../engine/codec';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
 import { announce } from './animate/announce';
 import { savedName } from './animate/cycle-menu';
+import { AuditionPill, Library } from './animate/library';
 import { Timeline } from './animate/timeline';
 import { insertClip, starts } from './cycles';
 import { cyclesOf, useEditor, type Cycles } from './editor';
@@ -114,6 +115,7 @@ export function App({ S }: { S: Strings }) {
   const [looping, setLooping] = useState(false);
   const sel = selected !== null && selected < state.cycle.length ? selected : null;
   const loopOn = looping && sel !== null;
+  const auditioning = useSyncExternalStore(player.watch, () => player.auditioning);
   const base = cyclesOf(editor, doc.book);
   const cycles: Cycles = {
     ...base,
@@ -180,6 +182,11 @@ export function App({ S }: { S: Strings }) {
     const hidden = !track || track.bottom < 0 || track.top > innerHeight;
     if (fresh) toast(`${hidden ? said + '. ' : ''}${S.savedAs(savedName(fresh, S))}`);
     else if (hidden) toast(said, { label: S.undo, run: editor.undoLast() });
+  };
+
+  const audition = (anim: Anim | null) => {
+    player.audition(anim ? { anim, dur: DEFAULT_DUR[anim] } : null);
+    if (anim) announce(S.previewing(S.anims[anim]));
   };
 
   const loop = (on: boolean) => {
@@ -275,6 +282,11 @@ export function App({ S }: { S: Strings }) {
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
               <div className="relative flex justify-center">
                 <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
+                {mode === 'animate' && auditioning ? (
+                  <div className="pointer-events-none absolute inset-x-0 -bottom-1 z-20 flex justify-center">
+                    <AuditionPill anim={auditioning.anim} full={state.cycle.length >= MAX_CLIPS} S={S} onAdd={() => (add(auditioning.anim), audition(null))} onStop={() => audition(null)} />
+                  </div>
+                ) : null}
               </div>
               <StageToolbar
               S={S}
@@ -301,7 +313,7 @@ export function App({ S }: { S: Strings }) {
               mode={mode}
               S={S}
               className="md:max-h-full md:overflow-y-auto"
-              onAdd={add}
+              library={<Library look={state} clips={state.cycle} previewing={auditioning?.anim ?? null} after={sel !== null ? S.anims[state.cycle[sel].anim] : null} S={S} onAdd={add} onPreview={audition} />}
             />
           </div>
         </main>
