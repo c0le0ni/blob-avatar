@@ -105,7 +105,7 @@ function Item({ anim, look, thumb, count, full, previewing, after, S, onAdd, onP
                 {count ? (
                   <>
                     <span>·</span>
-                    <span className="font-medium text-foreground-muted">×{count}</span>
+                    <span>×{count}</span>
                   </>
                 ) : null}
               </span>

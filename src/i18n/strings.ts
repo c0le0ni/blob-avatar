@@ -90,8 +90,6 @@ const en = {
   loop: 'Loop',
   remove: 'Remove',
   noClip: 'Pick an animation on the track to change it',
-  moveGrip: (name: string) => `Move ${name}`,
-  resizeGrip: (name: string) => `Change the length of ${name}`,
   said: {
     added: (name: string, i: number, n: number) => `${name} added, ${i} of ${n}`,
     moved: (name: string, i: number, n: number) => `${name} moved to ${i} of ${n}`,
@@ -255,8 +253,6 @@ const pt: Strings = {
   loop: 'Repetir',
   remove: 'Remover',
   noClip: 'Escolha uma animação na trilha para mudar',
-  moveGrip: (name: string) => `Mover ${name}`,
-  resizeGrip: (name: string) => `Mudar a duração de ${name}`,
   said: {
     added: (name: string, i: number, n: number) => `${name} no ciclo, ${i} de ${n}`,
     moved: (name: string, i: number, n: number) => `${name} na posição ${i} de ${n}`,

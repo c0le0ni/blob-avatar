@@ -95,7 +95,6 @@ export function Track({ clips, thumbs, pps, pad, selected, focusable, scroller, 
                     {on ? (
                       <span
                         aria-hidden
-                        title={S.moveGrip(name)}
                         className="flex h-full w-3.5 shrink-0 cursor-grab touch-none items-center justify-center text-foreground-subtle hover:text-foreground @max-[55px]/chip:hidden touch:w-5"
                         onPointerDown={(e) => onClipDown(e, i, true)}
                       >
@@ -128,7 +127,6 @@ export function Track({ clips, thumbs, pps, pad, selected, focusable, scroller, 
                 // the edge that stretches the clip: 16px to grab (24px under a finger), half of it outside
                 <span
                   aria-hidden
-                  title={S.resizeGrip(name)}
                   className="absolute inset-y-0 -right-[7px] z-10 flex w-4 cursor-ew-resize touch-none items-center justify-center touch:-right-[11px] touch:w-6"
                   onPointerDown={(e) => onEdgeDown(e, i)}
                 >
