@@ -1,6 +1,7 @@
 import { Clapperboard, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { loopLength, type Anim } from '../engine';
+import { randomLook } from '../engine/codec';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
@@ -12,6 +13,8 @@ import { runIntro } from './intro';
 import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
 import { settings } from './prefs';
+import { bindShortcuts, type Action } from './shortcuts';
+import { StageToolbar } from './stage-toolbar';
 import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
@@ -98,7 +101,7 @@ const MODES = [
 ] as const;
 
 export function App({ S }: { S: Strings }) {
-  const { editor, doc } = useEditor();
+  const { editor, doc, canUndo, canRedo } = useEditor();
   const state = doc.blob;
   const edit = editor.edit;
   const cycles = cyclesOf(editor, doc.book);
@@ -107,6 +110,9 @@ export function App({ S }: { S: Strings }) {
   const [player] = useState(() => new Player(state, prefs.still));
   const pendingSeek = useRef<number | null>(null);
   const wordmark = useRef<HTMLElement | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
+  const shortcuts = useRef<Partial<Record<Action, () => void>>>({});
 
   useEffect(() => {
     player.setState(state);
@@ -134,6 +140,30 @@ export function App({ S }: { S: Strings }) {
     pendingSeek.current = loopLength(state);
     cycles.change((cs) => addClip(cs, anim));
   };
+
+  /** a new look from the swatches; the cycle stays */
+  const randomize = () =>
+    edit((s) => {
+      const r = randomLook(s, Math.floor(Math.random() * 2 ** 31));
+      s.shape = r.shape;
+      s.color = r.color;
+      s.expression = r.expression;
+      s.seed = r.seed;
+    });
+
+  useEffect(() => {
+    shortcuts.current = {
+      randomize,
+      undo: editor.undo,
+      redo: editor.redo,
+      play: mode === 'animate' ? () => player.setPlaying(!player.isPlaying) : undefined,
+      help: () => {
+        setKeysOpen(true);
+        setSettingsOpen(true);
+      },
+    };
+  });
+  useEffect(() => bindShortcuts(() => shortcuts.current), []);
 
   const modeSwitch = (
     <Segmented
@@ -173,9 +203,23 @@ export function App({ S }: { S: Strings }) {
           {modeSwitch}
         </div>
         <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 md:flex-row md:gap-4 md:px-5 md:pb-0">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
-            <div className="flex min-h-0 flex-1 items-center justify-center py-4 md:py-0">
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
+            {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 py-4 md:py-0">
               <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
+              <StageToolbar
+              S={S}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onRandomize={randomize}
+              onUndo={editor.undo}
+              onRedo={editor.redo}
+              settingsOpen={settingsOpen}
+              onSettingsOpen={setSettingsOpen}
+              keysOpen={keysOpen}
+              onKeysOpen={setKeysOpen}
+              className="md:absolute md:top-2 md:right-0 md:z-10"
+              />
             </div>
             {mode === 'animate' ? <Timeline state={state} cycles={cycles} player={player} S={S} className="w-full max-w-5xl animate-rise-in md:mb-1" /> : null}
           </div>

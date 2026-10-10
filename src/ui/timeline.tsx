@@ -46,7 +46,9 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
   // the playhead and the clock follow the player without re-rendering anything
   useEffect(
     () =>
-      player.subscribe((t, length) => {
+      player.subscribe((t, length, on) => {
+        // the play button follows the player, whoever paused it (Space does too)
+        setPlaying(on);
         const els = list.current?.querySelectorAll<HTMLElement>('[data-clip]');
         if (!els?.length || !head.current) return;
         let i = 0;
@@ -69,10 +71,7 @@ export function Timeline({ state, cycles, player, S, className }: { state: BlobS
     focusNext.current = null;
   });
 
-  const toggle = () => {
-    player.setPlaying(!player.isPlaying);
-    setPlaying(player.isPlaying);
-  };
+  const toggle = () => player.setPlaying(!player.isPlaying);
 
   // ---------------------------------------------------------------- dragging
 
