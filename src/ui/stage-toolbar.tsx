@@ -66,6 +66,7 @@ function SettingsPanel({ S, keysOpen, onKeysOpen }: { S: Strings; keysOpen: bool
   return (
     <>
       <SwitchRow id="set-follow" label={S.follow} hint={S.followHint} checked={prefs.follow} onChange={(follow) => settings.set({ follow })} />
+      <SwitchRow id="set-react" label={S.react} hint={S.reactHint} checked={prefs.react} onChange={(react) => settings.set({ react })} />
       <SwitchRow id="set-backdrop" label={S.showBg} hint={S.showBgHint} checked={prefs.showBg} onChange={(showBg) => settings.set({ showBg })} />
       <SwitchRow id="set-still" label={S.stillPreview} hint={S.stillHint} checked={prefs.still} onChange={(still) => settings.set({ still })} />
       <div className={cn(ROW, 'min-h-11')}>

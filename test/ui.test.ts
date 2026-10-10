@@ -118,4 +118,15 @@ describe('embed code', () => {
     expect(on.endsWith(' size="160" gaze></blob-avatar>')).toBe(true);
     expect(on.replace(' gaze', '')).toBe(off);
   });
+
+  it('asks for a reaction only when reacting to clicks is on', () => {
+    const s = cloneState(DEFAULT_STATE);
+    const off = embedCode(s);
+    expect(off).not.toMatch(/reaction/);
+    expect(embedCode(s, { reaction: false })).toBe(off);
+    const on = embedCode(s, { reaction: true });
+    expect(on.endsWith(' size="160" reaction></blob-avatar>')).toBe(true);
+    expect(on.replace(' reaction', '')).toBe(off);
+    expect(embedCode(s, { gaze: true, reaction: true }).endsWith(' size="160" gaze reaction></blob-avatar>')).toBe(true);
+  });
 });

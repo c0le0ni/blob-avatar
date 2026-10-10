@@ -1,5 +1,5 @@
-// Settings kept on this device: the stage (follow the cursor, the export's
-// background, a still preview) and the export options. The theme keeps its own key,
+// Settings kept on this device: the stage (follow the cursor, react to clicks, the
+// export's background, a still preview) and the export options. The theme keeps its own key,
 // which the page reads before it paints (public/theme-init.js).
 
 import { useSyncExternalStore } from 'react';
@@ -60,6 +60,8 @@ export const SIZES = ['256', '512', '1024'] as const;
 export interface Settings {
   /** the stage's eyes follow the cursor, and the embed code asks for it (gaze) */
   follow: boolean;
+  /** a click on the stage plays the embed's reaction, and the embed code asks for it (reaction) */
+  react: boolean;
   /** the stage shows the export's background and round crop */
   showBg: boolean;
   /** the stage holds the rest pose */
@@ -76,7 +78,7 @@ export interface Settings {
 
 const KEY = 'coleoni-blob.settings';
 const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-const DEFAULTS: Settings = { follow: false, showBg: false, still: reducedMotion, size: '512', custom: '', bg: false, bgColor: '#ffffff', round: false };
+const DEFAULTS: Settings = { follow: false, react: false, showBg: false, still: reducedMotion, size: '512', custom: '', bg: false, bgColor: '#ffffff', round: false };
 
 function validate(raw: Record<string, unknown>): Partial<Settings> {
   const s = sameTypes(DEFAULTS, raw);

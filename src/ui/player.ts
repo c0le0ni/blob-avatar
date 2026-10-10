@@ -1,13 +1,14 @@
 // The stage's clock and drawing, outside React: one requestAnimationFrame loop that
 // draws the blob into a live SVG, morphs from what was on screen when the look
 // changes, and tells the timeline where the playhead is. React only hands it the
-// state, the mode and the settings (follow the cursor, hold still).
+// state, the mode and the settings (follow the cursor, hold still), and a click on
+// the stage plays the embed's reaction.
 //
 // A still stage (reduced motion, or the setting) holds the rest pose in Customize.
 // In Animate it shows the real pose wherever the playhead is, starts paused, and
 // plays when someone asks: pressing Play is a request for motion.
 
-import { IDLE_CYCLE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from '../engine';
+import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from '../engine';
 import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
 import { LiveSvg } from '../render/svg';
 
@@ -49,6 +50,8 @@ export class Player {
   private trial: { clip: Clip; t: number } | null = null;
   /** whether it was playing when the playhead was picked up */
   private scrubbedFrom: boolean | null = null;
+  /** when the stage was clicked (performance.now()), while the reaction plays */
+  private poked = -1;
 
   constructor(state: BlobState, still = reducedMotion()) {
     this.state = state;
@@ -217,6 +220,11 @@ export class Player {
     this.redrawIfStill(true);
   }
 
+  /** the embed's reaction, a wink and a hop over whatever plays; a still stage holds its pose for a moment */
+  react() {
+    if (this.poked < 0) this.poked = performance.now();
+  }
+
   private onMove = (e: PointerEvent) => {
     this.pointer = [e.clientX, e.clientY];
   };
@@ -271,13 +279,18 @@ export class Player {
     if (!still && this.isPlaying) this.t += dt;
     if (this.range && this.isPlaying && (this.t >= this.range[1] || this.t < this.range[0])) this.t = this.range[0];
     if (this.t >= L) this.t %= L;
+    let input = this.inputAt(dt);
+    // a reaction plays over it, as in the embed: a still stage shows its pose, without the hop
+    const r = this.poked < 0 ? POKE.dur : (now - this.poked) / 1000;
+    if (r < POKE.dur) input = { ...input, react: { ...POKE, hop: !this.holding, t: this.holding ? POKE.dur / 2 : r } };
+    else this.poked = -1;
     let m: RenderModel;
     if (this.trial) {
       // an audition plays even on a still stage: someone asked to see it
       const s: BlobState = { ...this.state, cycle: [this.trial.clip, { anim: 'idle', dur: AUDITION_REST }] };
       if (!still) this.trial.t = (this.trial.t + dt) % loopLength(s);
-      m = frame(s, this.trial.t, this.inputAt(dt));
-    } else m = frame(this.playable, this.t, this.inputAt(dt));
+      m = frame(s, this.trial.t, input);
+    } else m = frame(this.playable, this.t, input);
     if (this.from) {
       const u = Math.min(1, (now - this.fromAt) / 1000 / MORPH);
       m = mixModels(this.from, m, 1 - (1 - u) ** 3);

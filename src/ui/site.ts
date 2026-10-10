@@ -70,8 +70,8 @@ export function animThumb(s: BlobState, anim: Anim): { svg: string; view: string
   return { svg: svgOf(m, view), view };
 }
 
-/** the snippet behind "Copy embed code"; with gaze, the blob follows the cursor */
-export function embedCode(s: BlobState, opt: { gaze?: boolean } = {}): string {
+/** the snippet behind "Copy embed code"; with gaze, the blob follows the cursor, and with reaction, a click makes it wink and hop */
+export function embedCode(s: BlobState, opt: { gaze?: boolean; reaction?: boolean } = {}): string {
   const anim = s.cycle.map((c) => `${c.anim}.${c.dur}`).join(',');
-  return `<script src="${SITE}/v2/embed.js" defer></script>\n<blob-avatar shape="${s.shape}" color="${s.color}" expression="${s.expression}" animation="${anim}" seed="${s.seed.toString(36)}" size="160"${opt.gaze ? ' gaze' : ''}></blob-avatar>`;
+  return `<script src="${SITE}/v2/embed.js" defer></script>\n<blob-avatar shape="${s.shape}" color="${s.color}" expression="${s.expression}" animation="${anim}" seed="${s.seed.toString(36)}" size="160"${opt.gaze ? ' gaze' : ''}${opt.reaction ? ' reaction' : ''}></blob-avatar>`;
 }

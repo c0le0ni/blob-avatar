@@ -25,8 +25,8 @@ import { TooltipProvider } from './primitives/tooltip';
 import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
 import { GithubLink, LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
-/** the stage; with a backdrop, it shows the export's background and round crop around the blob */
-function Stage({ player, label, small, backdrop }: { player: Player; label: string; small: boolean; backdrop: { bg: string | null; round: boolean } | null }) {
+/** the stage; with a backdrop, it shows the export's background and round crop around the blob, and when it reacts, a click plays the reaction */
+function Stage({ player, label, small, backdrop, reacts }: { player: Player; label: string; small: boolean; backdrop: { bg: string | null; round: boolean } | null; reacts: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = host.current!;
@@ -43,11 +43,13 @@ function Stage({ player, label, small, backdrop }: { player: Player; label: stri
       id="stage"
       role="img"
       aria-label={label}
+      onClick={reacts ? () => player.react() : undefined}
       className={cn(
         'aspect-square shrink-0 scroll-mt-16 transition-[width,border-radius,background-color] duration-(--motion-slow) ease-out-expo [&>svg]:block [&>svg]:size-full',
         small ? 'w-[min(64vw,15rem,34vh)] md:w-[min(40vh,24rem)]' : 'w-[min(72vw,17rem,40vh)] md:w-[min(52vh,28rem)]',
         // the export cuts at the edge of the picture: so does the stage, then
         backdrop && ['overflow-hidden', backdrop.round ? 'rounded-full' : 'rounded-xs', !backdrop.bg && 'checker'],
+        reacts && 'cursor-pointer select-none',
       )}
       style={backdrop?.bg ? { backgroundColor: backdrop.bg } : undefined}
     />
@@ -287,7 +289,7 @@ export function App({ S }: { S: Strings }) {
             {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
               <div className="relative flex justify-center">
-                <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
+                <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} reacts={prefs.react} />
                 {mode === 'animate' && auditioning ? (
                   // over the top of the stage on a phone (its tools sit right under it), under the blob from md up
                   <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center md:top-auto md:-bottom-1">
