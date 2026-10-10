@@ -16,10 +16,14 @@ export const size = (c: Contour) => c.x.length;
 
 /**
  * Turn a dense closed polyline into a contour of n points evenly spaced along its
- * length, starting at the top (the highest point nearest the vertical axis) and going
- * clockwise on screen. Even spacing keeps morphs from bunching up.
+ * length, going clockwise on screen. Even spacing keeps morphs from bunching up.
+ *
+ * It starts at the top: the highest point, the one nearest the vertical axis if
+ * several are as high. A shape with two tops (a heart) would start on one of them
+ * and turn as it morphs into another, so with `start: 'axis'` it starts on the axis
+ * instead: at the point nearest it, the highest one if several are as near.
  */
-export function resample(poly: Pt[], n: number): Contour {
+export function resample(poly: Pt[], n: number, { start: from = 'top' }: { start?: 'top' | 'axis' } = {}): Contour {
   // orientation: make it clockwise on screen (y down) = positive signed area
   let area = 0;
   for (let i = 0; i < poly.length; i++) {
@@ -28,12 +32,13 @@ export function resample(poly: Pt[], n: number): Contour {
     area += x1 * y2 - x2 * y1;
   }
   const pts = area < 0 ? [...poly].reverse() : poly;
-  // start at the top: lowest y, then smallest |x|
+  // the start: least by the first key, then by the second
+  const key = ([x, y]: Pt) => (from === 'axis' ? [Math.abs(x), y] : [y, Math.abs(x)]);
   let start = 0;
   for (let i = 1; i < pts.length; i++) {
-    const [x, y] = pts[i];
-    const [sx, sy] = pts[start];
-    if (y < sy - 1e-6 || (Math.abs(y - sy) <= 1e-6 && Math.abs(x) < Math.abs(sx))) start = i;
+    const [a, b] = key(pts[i]);
+    const [c, d] = key(pts[start]);
+    if (a < c - 1e-6 || (Math.abs(a - c) <= 1e-6 && b < d)) start = i;
   }
   const ring = [...pts.slice(start), ...pts.slice(0, start)];
   const lens = [0];

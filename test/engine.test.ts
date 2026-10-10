@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
 import { fromHash, randomState, toHash } from '../src/engine/codec';
+import { resample, type Pt } from '../src/engine/contour';
 import { toSvgString } from '../src/render/svg';
 
 const state = (p: Partial<BlobState> = {}): BlobState => ({ ...cloneState(DEFAULT_STATE), ...p });
@@ -61,6 +62,17 @@ describe('frame', () => {
   it('the default cycle has every animation once', () => {
     expect(DEFAULT_CYCLE.map((c) => c.anim)).toEqual([...ANIMS]);
   });
+});
+
+describe('shapes', () => {
+  it("an outline with two tops starts on one of them by default, and between them with start: 'axis'", () => {
+    const twoTops: Pt[] = [[-1, -1], [-0.5, -1.2], [0, -0.8], [0.5, -1.2], [1, -1], [1, 1], [-1, 1]];
+    expect(Math.abs(resample(twoTops, 24).x[0])).toBeCloseTo(0.5);
+    const c = resample(twoTops, 24, { start: 'axis' });
+    expect([c.x[0], c.y[0]]).toEqual([0, -0.8]);
+    expect(c.x[1]).toBeGreaterThan(0);
+  });
+
 });
 
 describe('codec', () => {
