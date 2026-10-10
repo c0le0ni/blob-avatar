@@ -4,3 +4,4 @@ h2 { font-size: 13px; font-weight: 600; color: #8b8d94; letter-spacing: .06em; t
 figure { margin: 0; display: grid; gap: 6px; justify-items: center; padding: 12px; background: #141416; border-radius: 12px; }
 figcaption { font: 11px ui-monospace, monospace; color: #8b8d94; max-width: 160px; text-align: center; }
 .css-size { width: 120px; height: 120px; }
+.note { color: #8b8d94; margin: -4px 0 12px; }

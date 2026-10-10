@@ -14,7 +14,7 @@
 <h2>No attributes: every animation once</h2>
 <div class="row">
   <figure><blob-avatar></blob-avatar><figcaption>&lt;blob-avatar&gt;</figcaption></figure>
-  <figure><blob-avatar shape="circle" color="#aefa0e" expression="happy" animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar><figcaption>the snippet in the README</figcaption></figure>
+  <figure><blob-avatar shape="circle" color="#aefa0e" expression="happy" animation="idle.2.4,wink.1.6" size="160" gaze reaction></blob-avatar><figcaption>the snippet in the README</figcaption></figure>
 </div>
 
 <h2>Shapes</h2>
@@ -82,6 +82,18 @@
   <figure><blob-avatar gaze shape="squircle" color="#e152b0" expression="suspicious" animation="idle.2.4,wink.1.6" size="120"></blob-avatar><figcaption>gaze, with a cycle</figcaption></figure>
   <figure><blob-avatar gaze paused shape="triangle" color="#2fbfa0" size="120"></blob-avatar><figcaption>gaze and paused (holds still)</figcaption></figure>
   <figure><blob-avatar shape="pebble" color="#8b5e3c" expression="attentive" animation="idle.4.8" size="120"></blob-avatar><figcaption>no gaze: looks around on its own</figcaption></figure>
+</div>
+
+<h2>Reaction (click them)</h2>
+<p class="note">With reduced motion (emulate it in DevTools, Rendering), a click shows the reaction's pose for 0.8 s and nothing moves.</p>
+<div class="row">
+  <figure><blob-avatar reaction color="#aefa0e" expression="happy" animation="idle.4.8" size="120"></blob-avatar><figcaption>reaction: a wink and a hop</figcaption></figure>
+  <figure><blob-avatar reaction="exclaim" color="#f08a24" animation="idle.2.4,thinking.2.6" size="120"></blob-avatar><figcaption>reaction="exclaim", over a cycle</figcaption></figure>
+  <figure><blob-avatar reaction="orbit.2" gaze shape="triangle" color="#3b93f0" animation="idle.4.8" size="120"></blob-avatar><figcaption>reaction="orbit.2", with gaze</figcaption></figure>
+  <figure><blob-avatar reaction="spin" shape="cloud" color="#8b5cf6" animation="idle.4.8" size="120"></blob-avatar><figcaption>reaction="spin": not an animation, the default</figcaption></figure>
+  <figure><blob-avatar reaction tabindex="0" aria-label="A blob that winks, press Enter" shape="squircle" color="#e152b0" animation="idle.4.8" size="120"></blob-avatar><figcaption>tabindex="0": Enter and Space too</figcaption></figure>
+  <figure><blob-avatar reaction paused shape="heart" color="#e8483f" size="120"></blob-avatar><figcaption>paused: holds the wink's pose for a moment</figcaption></figure>
+  <figure><blob-avatar shape="pebble" color="#a3a3a3" animation="idle.4.8" size="120"></blob-avatar><figcaption>no reaction: a click does nothing</figcaption></figure>
 </div>
 
 <h2>Sizes and colors</h2>

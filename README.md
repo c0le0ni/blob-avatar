@@ -50,11 +50,12 @@ Customize mode they play the idle loop.
 <script src="https://blob.coleoni.com/v2/embed.js" defer></script>
 
 <blob-avatar shape="circle" color="#aefa0e" expression="happy"
-             animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar>
+             animation="idle.2.4,wink.1.6" size="160" gaze reaction></blob-avatar>
 ```
 
 "Copy embed code", in the export menu, writes this tag for the blob you made, seed
-included. Add `gaze` if you want it to follow the cursor.
+included. Add `gaze` if you want it to follow the cursor, and `reaction` if a click
+should make it wink and hop (the editor's settings add both for you).
 
 The script's address carries its major version: `/v2/` stays on v2, so a new major
 never changes a blob already on your page. `/embed.js` always serves the latest
@@ -70,6 +71,7 @@ version.
 | `size` | pixels, up to 4096 (or size the element with CSS) | `160` |
 | `gaze` | no value: the eyes follow the cursor | off |
 | `paused` | no value: holds still | off |
+| `reaction` | no value: a click makes it wink and hop, while its cycle keeps playing. Or an animation's name, with seconds as in `animation` if you like (`exclaim`, `orbit.2`), to play that instead. With a `tabindex` on the element, Enter and Space work too | off |
 | `state` | a whole share-link hash (`v=2&shape=…`); the attributes above override its parts | |
 
 A value that is not on these lists is ignored, so the default (or the value from
@@ -78,8 +80,9 @@ A value that is not on these lists is ignored, so the default (or the value from
 Changing an attribute changes the blob right away. The element works under a strict
 Content Security Policy (no inline styles, no `eval`), runs one animation loop for
 every avatar on the page, draws only the ones on screen, and holds still for visitors
-who prefer reduced motion. It has `role="img"` and the label "Blob avatar"; set
-`aria-label` to say something else. About 11 KB gzipped.
+who prefer reduced motion (a click on a `reaction` avatar then shows the reaction's
+pose for a moment, without moving). It has `role="img"` and the label "Blob avatar";
+set `aria-label` to say something else. About 12 KB gzipped.
 
 **Snippets and links from the first version** still open. The old shape names
 (`orb` `bean` `block` `pill` `tri` `hex` `puff` `drop`) map to the new shapes, and
@@ -127,7 +130,7 @@ npm run build    # the site and embed.js (also at v2/embed.js), into dist/
 `lab.html` shows every shape, expression, color and animation at once
 (`?strip=orbit` shows one animation as 16 stills, `?freeze=1.2` stops everything at
 1.2 seconds). `embed-test.html` runs `<blob-avatar>` under a strict CSP with every
-shape and expression, each animation and the edge cases (after a build).
+shape and expression, each animation, the reaction and the edge cases (after a build).
 
 ## License
 
