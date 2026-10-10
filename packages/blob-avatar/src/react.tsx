@@ -10,23 +10,50 @@ import { LiveSvg, layersMarkup } from './render/svg';
 import { drive, reactionOf, type Driver } from './driver';
 
 export interface BlobAvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'color' | 'children' | 'dangerouslySetInnerHTML'> {
-  /** the outline of the body */
+  /**
+   * the outline of the body
+   * @default "circle"
+   */
   shape?: Shape;
-  /** the body color: a six-digit hex color, with or without `#` */
+  /**
+   * the body color: a six-digit hex color, with or without `#`
+   * @default "#aefa0e"
+   */
   color?: string;
-  /** the face */
+  /**
+   * the face
+   * @default "neutral"
+   */
   expression?: Expression;
-  /** the cycle, played in order and looped: `"idle.2.4,wink.1.6"` as in the share link, or a list of clips */
+  /**
+   * the cycle, played in order and looped: `"idle.2.4,wink.1.6"` as in the share link, or a list of clips
+   * @default every animation once
+   */
   animation?: string | Clip[];
-  /** changes when it blinks and where it glances: a whole number, or 1 to 6 characters of `0-9a-z` as in the share link */
+  /**
+   * changes when it blinks and where it glances: a whole number, or 1 to 6 characters of `0-9a-z` as in the share link
+   * @default 1
+   */
   seed?: number | string;
-  /** width and height: pixels, or any CSS length */
+  /**
+   * width and height: pixels, or any CSS length
+   * @default 160
+   */
   size?: number | string;
-  /** the eyes follow the cursor */
+  /**
+   * the eyes follow the cursor
+   * @default false
+   */
   gaze?: boolean;
-  /** holds still */
+  /**
+   * holds still
+   * @default false
+   */
   paused?: boolean;
-  /** a click makes it wink and hop (`true`), or plays the animation it names, with seconds if you like (`"exclaim"`, `"orbit.2"`); with a `tabIndex`, Enter and Space too */
+  /**
+   * a click makes it wink and hop (`true`), or plays the animation it names, with seconds if you like (`"exclaim"`, `"orbit.2"`); with a `tabIndex`, Enter and Space too
+   * @default false
+   */
   reaction?: boolean | Anim | `${Anim}.${number}`;
   /** a whole share-link hash (`"v=2&shape=…"`) or a state; the props above override its parts */
   state?: string | BlobState;

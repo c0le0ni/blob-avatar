@@ -15,7 +15,8 @@
     "preview": "vite preview --port 5321",
     "test": "vitest run",
     "check": "tsc --noEmit",
-    "pages": "vite-node scripts/pages.ts"
+    "pages": "vite-node scripts/pages.ts",
+    "readme": "vite-node scripts/readme.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

@@ -13,6 +13,7 @@
 <p align="center">
   <a href="https://blob.coleoni.com"><b>blob.coleoni.com</b></a> ·
   <a href="https://blob.coleoni.com/pt/">Português</a> ·
+  <a href="https://www.npmjs.com/package/blob-avatar">npm</a> ·
   <a href="https://coleoni.com">Coleoni</a> ·
   <a href="https://skills.coleoni.com">Coleoni Skills</a> ·
   <a href="https://loaders.coleoni.com">Loaders</a>
@@ -37,7 +38,7 @@
   to 512 pixels, 20 frames a second); still SVG; animated SVG. Transparent or on a
   solid background, square or round. The PNG and the SVG also copy straight to the
   clipboard.
-- **An embed tag** for your own site (below).
+- **An embed tag** for your own site, and **a React component** on npm (below).
 - **A share link:** the whole avatar lives in the URL, so the address bar is always
   a link to it.
 
@@ -92,6 +93,26 @@ confused), and the other expressions and the animations that still exist keep
 working. Everything else (`eyes`, `mode`, `eyec`, `bg`, the moves that are gone) is
 ignored, so check old snippets against the table above.
 
+## In a React app
+
+```bash
+npm i blob-avatar
+```
+
+```tsx
+import { BlobAvatar } from "blob-avatar";
+
+<BlobAvatar shape="circle" color="#aefa0e" expression="happy"
+            animation="idle.2.4,wink.1.6" size={160} gaze reaction />
+```
+
+The props are the tag's attributes, so the embed code from the editor works here
+too. The first render is plain SVG markup, so it renders on the server and nothing
+moves when the page hydrates; after mount it starts to move, on the same loop as the
+tag. For pages that bundle their own scripts, `import "blob-avatar/element"`
+registers `<blob-avatar>`. Every prop and type is in the
+[package's README](packages/blob-avatar/README.md).
+
 ## How it works
 
 Everything is drawn from scratch, every frame, by a small engine with no
@@ -125,7 +146,14 @@ npm run dev      # http://localhost:5320
 npm test
 npm run check    # types
 npm run build    # the site and embed.js (also at v2/embed.js), into dist/
+npm run build:lib  # the npm package, into packages/blob-avatar/dist/
+npm run readme   # the props table in the package's README, from its types
 ```
+
+The engine, the renderer, `<blob-avatar>` and the React component live in
+`packages/blob-avatar`, the `blob-avatar` package on npm. The site imports them from
+source, so it always runs what gets published. The package's version is the embed's:
+a new major means a new `/vN/embed.js` path.
 
 `lab.html` shows every shape, expression, color and animation at once
 (`?strip=orbit` shows one animation as 16 stills, `?freeze=1.2` stops everything at
