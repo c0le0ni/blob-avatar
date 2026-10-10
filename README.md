@@ -27,9 +27,12 @@
 - **20 expressions**, from neutral and happy to worried, smug and sleepy.
 - **Any color:** twelve swatches, or any other with the picker (a hex field, and an
   eyedropper where the browser has one).
-- **14 animations** in a cycle of up to 24 clips: drag to reorder, drag an edge to
-  change a length (0.4 to 10 seconds). The cycle loops without a seam, and the
-  cycles you make are kept on your device.
+- **14 animations** in a cycle of up to 24 clips, on a timeline that fits the whole
+  cycle: drag to reorder (hold a moment first on a phone), drag the selected clip's
+  edge to change its length (0.4 to 10 seconds), loop one clip, or do all of it
+  from the keyboard. Any animation plays on the stage before you add it. Start from
+  a template (hello, notify, thinking, sleepy, show) or from your own cycles, which
+  you can name and are kept on your device. The cycle loops without a seam.
 - **Exports:** PNG at 256, 512 or 1024 pixels, or any size from 16 to 2048; GIF (up
   to 512 pixels, 20 frames a second); still SVG; animated SVG. Transparent or on a
   solid background, square or round. The PNG and the SVG also copy straight to the
