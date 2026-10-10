@@ -27,17 +27,35 @@ const xfade = (u: number) => (1 - Math.exp(-u / 0.075)) / (1 - Math.exp(-XFADE /
 export const fit = (p: number, loop: number) => (loop > 0 ? loop / Math.max(1, Math.round(loop / p)) : p);
 
 const fade = <T extends { alpha: number }>(list: T[], w: number) => list.map((x) => ({ ...x, alpha: x.alpha * w }));
+const weigh = <T extends { w: number }>(list: T[], w: number) => list.map((x) => ({ ...x, w: x.w * w }));
 
-function toMotion(p: Pose, w = 1): Motion {
+/** a clip's pose as a motion, its looks as lists that another motion can join */
+export function toMotion(p: Pose): Motion {
   const { expr, exprW, fig, figW, eyes, eyesW, ...rest } = p;
   return {
     ...rest,
-    exprs: expr ? [{ expr, w: exprW * w }] : [],
-    figs: fig ? [{ fig, w: figW * w }] : [],
-    faces: eyes ? [{ face: eyes, w: eyesW * w }] : [],
-    parts: fade<PartSpec>(p.parts, w),
-    trails: fade<TrailSpec>(p.trails, w),
+    exprs: expr ? [{ expr, w: exprW }] : [],
+    figs: fig ? [{ fig, w: figW }] : [],
+    faces: eyes ? [{ face: eyes, w: eyesW }] : [],
   };
+}
+
+/**
+ * One motion on its way to another, w of the way: the numbers in between, and both
+ * sets of eyes, figures, dots and lines, each faded by its share. The cycle turns
+ * from clip to clip with it, and a reaction comes in over the cycle with it.
+ */
+export function mixMotion(a: Motion, b: Motion, w: number): Motion {
+  const out: Motion = {
+    ...b,
+    exprs: [...weigh(a.exprs, 1 - w), ...weigh(b.exprs, w)],
+    figs: [...weigh(a.figs, 1 - w), ...weigh(b.figs, w)],
+    faces: [...weigh(a.faces, 1 - w), ...weigh(b.faces, w)],
+    parts: [...fade<PartSpec>(a.parts, 1 - w), ...fade<PartSpec>(b.parts, w)],
+    trails: [...fade<TrailSpec>(a.trails, 1 - w), ...fade<TrailSpec>(b.trails, w)],
+  };
+  for (const k of NUMERIC) out[k] = lerp(a[k], b[k], w);
+  return out;
 }
 
 /** the cycle at time t (any t: it loops) */
@@ -54,15 +72,7 @@ export function sequenceAt(state: BlobState, t: number): Motion {
   // turn from where the previous animation was when it ended
   const j = (i - 1 + seq.length) % seq.length;
   const prev = clipPose(seq[j].anim, seq[j].dur, seq[j].dur, state.seed + j * 101);
-  const w = xfade(tau);
-  const out = toMotion(cur, w);
-  for (const k of NUMERIC) out[k] = lerp(prev[k], cur[k], w);
-  const before = toMotion(prev, 1 - w);
-  out.exprs = [...before.exprs, ...out.exprs];
-  out.figs = [...before.figs, ...out.figs];
-  out.faces = [...before.faces, ...out.faces];
-  out.parts = [...before.parts, ...out.parts];
-  out.trails = [...before.trails, ...out.trails];
+  const out = mixMotion(toMotion(prev), toMotion(cur), xfade(tau));
   // when the eyes jump to another pose, they close on the way and open in place
   if (prev.eyes !== cur.eyes || prev.eyeAlpha !== cur.eyeAlpha) out.shut = Math.max(out.shut, 0.94 * Math.sqrt(Math.sin(Math.PI * Math.min(1, tau / 0.2))));
   return out;

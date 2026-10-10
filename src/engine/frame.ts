@@ -1,13 +1,13 @@
 // frame(state, t): everything the renderers need to draw the blob at time t.
 // Pure: the same state, time and input always give the same frame.
 
-import { PART_SLOTS, TRAIL_POINTS, TRAIL_SLOTS } from './animations';
+import { clipPose, PART_SLOTS, TRAIL_POINTS, TRAIL_SLOTS, type Anim } from './animations';
 import { autoEyeColor, mixHex } from './color';
 import { blend, clone, make, size, type Contour, type Pt } from './contour';
 import { blendFace, eyeOutline, FACES, turnEye, type EyePose } from './face';
 import { disc, EYE_POINTS } from './glyphs';
 import { clamp, lerp, smooth } from './math';
-import { blink, breath, sequenceAt, wander } from './motion';
+import { blink, breath, mixMotion, sequenceAt, toMotion, wander } from './motion';
 import { edgeAt, shapeContour } from './shapes';
 import { loopLength, type BlobState } from './state';
 
@@ -53,7 +53,18 @@ export interface FrameInput {
   still?: boolean;
   /** how open the eyes are, 0..1, on top of the blinks (the intro opens them) */
   open?: number;
+  /** a squash and a hop (a click), 0..1 of the way through; 0 and 1 are the blob at rest */
+  poke?: number;
+  /** an animation played over the cycle, which keeps running underneath: t is its own time, 0..dur */
+  react?: { anim: Anim; t: number; dur: number } | null;
 }
+
+/** how much of a reaction shows at its time t: in over 0.12 s, out over its last 0.2 s, nothing at either end */
+export const envelope = (t: number, dur: number) => smooth(Math.min(t / 0.12, (dur - t) / 0.2));
+
+/** the hop of a poke: up to a quarter of the body, in the air from 0.2 to 0.65 of the way */
+const air = (u: number) => clamp((u - 0.2) / 0.45, 0, 1);
+const wave = (v: number) => Math.sin(Math.PI * clamp(v, 0, 1));
 
 /** a circle in the drawing, from body units */
 const dot = (x: number, y: number, r: number) => {
@@ -114,7 +125,7 @@ function apart(a: Fitted, b: Fitted) {
 export function frame(state: BlobState, t: number, input: FrameInput = {}): RenderModel {
   const L = loopLength(state) || 2.4;
   const still = !!input.still;
-  const m = sequenceAt(state, still ? 0 : t);
+  let m = sequenceAt(state, still ? 0 : t);
   if (still) {
     Object.assign(m, { tx: 0, ty: 0, sx: 1, sy: 1, scale: 1, rot: 0, yaw: 0, pitch: 0, eyeAlpha: 1, shut: 0, holeR: 0 });
     m.exprs = [];
@@ -122,6 +133,21 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
     m.faces = [];
     m.parts = [];
     m.trails = [];
+  }
+  // a reaction comes in over the cycle and goes, the way the cycle turns from clip to clip
+  const r = input.react;
+  if (r) m = mixMotion(m, toMotion(clipPose(r.anim, r.t, r.dur, state.seed)), envelope(r.t, r.dur));
+  // a poke squashes the blob on the ground, hops and lands with a smaller squash; the dots, lines and gap go along
+  const u = input.poke ?? 0;
+  let hy = 0;
+  if (u > 0 && u < 1) {
+    const a = air(u);
+    const e = 0.08 * wave(a) - 0.16 * wave(u / 0.22) - 0.09 * wave((u - 0.65) / 0.35);
+    hy = a * (a - 1);
+    m.sx *= 1 - 0.7 * e;
+    m.sy *= 1 + e;
+    m.ty += hy;
+    m.anchor = 1;
   }
 
   // ---------------------------------------------------------------- body
@@ -186,14 +212,14 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
   for (let i = 0; i < PART_SLOTS; i++) {
     const p = m.parts[i];
     const live = p && p.alpha > 0.002 && p.r > 0.001;
-    parts.push({ c: dot(p?.x ?? 0, p?.y ?? 0, live ? p.r : 0), fill: p?.color ?? state.color, alpha: live ? Math.min(1, p.alpha) : 0 });
+    parts.push({ c: dot(p?.x ?? 0, (p?.y ?? 0) + hy, live ? p.r : 0), fill: p?.color ?? state.color, alpha: live ? Math.min(1, p.alpha) : 0 });
   }
-  const hole = dot(m.holeX, m.holeY, Math.max(0, m.holeR));
+  const hole = dot(m.holeX, m.holeY + hy, Math.max(0, m.holeR));
   const back: Trail[] = [], front: Trail[] = [];
   for (let i = 0; i < TRAIL_SLOTS; i++) {
     const tr = m.trails[i];
     const x = new Float64Array(TRAIL_POINTS), y = new Float64Array(TRAIL_POINTS);
-    if (tr && tr.alpha > 0.002) for (let k = 0; k < TRAIL_POINTS; k++) [x[k], y[k]] = [tr.pts[k][0] * RADIUS, tr.pts[k][1] * RADIUS];
+    if (tr && tr.alpha > 0.002) for (let k = 0; k < TRAIL_POINTS; k++) [x[k], y[k]] = [tr.pts[k][0] * RADIUS, (tr.pts[k][1] + hy) * RADIUS];
     (i % 2 ? front : back).push({ x, y, colors: tr?.colors ?? [state.color, state.color, state.color], width: (tr?.width ?? 0.05) * RADIUS, alpha: tr ? Math.min(1, tr.alpha) : 0 });
   }
 

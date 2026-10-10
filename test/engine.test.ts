@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
 import { fromHash, fromParams, randomLook, randomState, toHash } from '../src/engine/codec';
 import { springGaze, type Gaze } from '../src/engine/gaze';
 import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
@@ -189,5 +189,55 @@ describe('gaze', () => {
     for (let i = 0; i < 120; i++) g = springGaze(g, [0.8, -0.5], 1 / 60);
     expect(g[0]).toBeCloseTo(0.8, 2);
     expect(g[1]).toBeCloseTo(-0.5, 2);
+  });
+});
+
+describe('poke and reaction', () => {
+  const top = (m: RenderModel) => Math.min(...m.body.c.y);
+  const apart = (a: RenderModel, b: RenderModel) => Math.max(...a.body.c.y.map((y, i) => Math.hypot(a.body.c.x[i] - b.body.c.x[i], y - b.body.c.y[i])));
+
+  it('a poke has no NaN, hops, and is back at rest at 1', () => {
+    for (const s of [state(), randomState(7), state({ shape: 'heart', cycle: [{ anim: 'notification', dur: 2.2 }] })]) {
+      const rest = frame(s, 0.9);
+      expect(toSvgString(frame(s, 0.9, { poke: 0 }))).toBe(toSvgString(rest));
+      expect(toSvgString(frame(s, 0.9, { poke: 1 }))).toBe(toSvgString(rest));
+      for (let u = 0.01; u < 1; u += 0.03) expect(toSvgString(frame(s, 0.9, { poke: u }))).not.toMatch(/NaN|Infinity/);
+      expect(top(frame(s, 0.9, { poke: 0.42 }))).toBeLessThan(top(rest) - 10);
+      // it lands where it took off: just before the end, the body is all but back
+      expect(apart(frame(s, 0.9, { poke: 0.995 }), rest)).toBeLessThan(2);
+      expect(apart(frame(s, 0.9, { poke: 0.005 }), rest)).toBeLessThan(2);
+    }
+  });
+
+  it('a reaction shows nothing at either end of its length, and all of it in between', () => {
+    for (const dur of [0.8, ...Object.values(DEFAULT_DUR)]) {
+      expect(envelope(0, dur)).toBe(0);
+      expect(envelope(dur, dur)).toBe(0);
+      expect(envelope(dur / 2, dur)).toBe(1);
+    }
+  });
+
+  it('a reaction is the cycle at both ends, with no NaN in between, for every animation', () => {
+    const s = state();
+    const plain = toSvgString(frame(s, 3));
+    for (const anim of ANIMS) {
+      const dur = DEFAULT_DUR[anim];
+      expect(toSvgString(frame(s, 3, { react: { anim, t: 0, dur } })), anim).toBe(plain);
+      expect(toSvgString(frame(s, 3, { react: { anim, t: dur, dur } })), anim).toBe(plain);
+      for (let t = 0.05; t < dur; t += 0.1) expect(toSvgString(frame(s, 3, { react: { anim, t, dur }, poke: t / dur }))).not.toMatch(/NaN|Infinity/);
+    }
+    // over the idle loop, the wink shuts the right eye into a line while it shows
+    const idle = state({ cycle: [{ anim: 'idle', dur: 4.8 }] });
+    const wink = frame(idle, 1, { react: { anim: 'wink', t: 0.4, dur: 0.8 }, gaze: [0, 0] });
+    const open = frame(idle, 1, { gaze: [0, 0] });
+    const height = (m: RenderModel, i: 0 | 1) => Math.max(...m.eyes[i].c.y) - Math.min(...m.eyes[i].c.y);
+    expect(height(wink, 1)).toBeLessThan(height(open, 1) / 2);
+  });
+
+  it('a still blob shows a reaction as a pose', () => {
+    const s = state();
+    const pose = frame(s, 0, { still: true, react: { anim: 'wink', t: 0.4, dur: 0.8 } });
+    expect(toSvgString(pose)).not.toBe(toSvgString(frame(s, 0, { still: true })));
+    expect(toSvgString(pose)).toBe(toSvgString(frame(s, 5, { still: true, react: { anim: 'wink', t: 0.4, dur: 0.8 } })));
   });
 });
