@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { loopLength, type Anim } from '../engine';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
-import { GithubIcon } from './brand';
+import { ColeoniMark, GithubIcon } from './brand';
 import { addClip, useCycles } from './cycles';
 import { ExportMenu } from './export-menu';
 import { useBlob, useNotice } from './hooks';
@@ -147,10 +147,17 @@ export function App({ S }: { S: Strings }) {
           </div>
         </main>
         <footer data-intro="translateY(6px)" className="flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-2xs text-foreground-subtle">
-          <span>
-            {S.madeBy}{' '}
-            <a href={coleoniHome(S)} rel="noopener" className="font-medium text-foreground-muted transition-colors hover:text-foreground">
+          <span className="flex items-center gap-[0.25em]">
+            {S.madeBy}
+            <a
+              href={coleoniHome(S)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-[0.5em] py-1 font-medium text-foreground-muted transition-colors hover:text-foreground"
+            >
+              <ColeoniMark />
               Coleoni
+              <span className="sr-only"> {S.newTab}</span>
             </a>
           </span>
           <span aria-hidden>·</span>

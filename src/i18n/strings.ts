@@ -173,7 +173,7 @@ const pt: Strings = {
   toLight: 'Mudar para o tema claro',
   toDark: 'Mudar para o tema escuro',
   language: 'Idioma',
-  madeBy: 'Feito pela',
+  madeBy: 'Feito por',
   github: 'GitHub',
   skills: 'Coleoni Skills',
   newTab: '(abre em outra aba)',
