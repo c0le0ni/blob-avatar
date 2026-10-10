@@ -4,7 +4,7 @@
 // never lost. Plain functions on plain values: the editor (editor.ts) keeps them,
 // with undo.
 
-import { DEFAULT_CYCLE, DEFAULT_DUR, MAX_CLIPS, SHOW_AT, type Anim, type Clip } from '../engine';
+import { DEFAULT_CYCLE, DEFAULT_DUR, MAX_CLIPS, SHOW_AT, type Anim, type Clip } from 'blob-avatar/engine';
 
 /** the template with every animation once, the one a new page opens with */
 export const ALL = 'all';

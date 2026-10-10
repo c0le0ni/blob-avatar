@@ -2,10 +2,10 @@
 // keyframes per path that the browser interpolates (SMIL <animate values>). Frames
 // that a straight line between their neighbors already explains are dropped.
 
-import type { Contour } from '../engine/contour';
-import { frame, VIEW, type RenderModel } from '../engine/frame';
-import { loopLength, type BlobState } from '../engine/state';
-import { hasGap } from '../render/svg';
+import type { Contour } from 'blob-avatar/engine/contour';
+import { frame, VIEW, type RenderModel } from 'blob-avatar/engine/frame';
+import { loopLength, type BlobState } from 'blob-avatar/engine/state';
+import { hasGap } from 'blob-avatar/render/svg';
 
 export interface AnimatedSvgOptions {
   /** pixel size of the square output */

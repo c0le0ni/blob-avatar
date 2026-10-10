@@ -4,8 +4,8 @@
 // is always a link to it, and the cycles on this device.
 
 import { useSyncExternalStore } from 'react';
-import { cloneState, DEFAULT_STATE, type BlobState, type Clip } from '../engine';
-import { fromHash, toHash } from '../engine/codec';
+import { cloneState, DEFAULT_STATE, type BlobState, type Clip } from 'blob-avatar/engine';
+import { fromHash, toHash } from 'blob-avatar/engine/codec';
 import { bookFor, copyCycle, dropCycle, parseSaved, pickCycle, renameCycle, sameClips, uid, withClips, type Book, type SavedCycle } from './cycles';
 import { createHistory, push, redo, undo, type History } from './history';
 

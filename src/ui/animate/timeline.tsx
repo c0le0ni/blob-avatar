@@ -6,7 +6,7 @@
 import { CircleAlert, Minus, Pause, Play, Plus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { MAX_CLIPS, type BlobState } from '../../engine';
+import { MAX_CLIPS, type BlobState } from 'blob-avatar/engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
 import { useMediaQuery } from '../../lib/use-media-query';

@@ -4,10 +4,10 @@
 
 import { Eye, Plus, Square } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { ANIMS, DEFAULT_DUR, MAX_CLIPS, frame, type Anim, type BlobState, type Clip } from '../../engine';
+import { ANIMS, DEFAULT_DUR, MAX_CLIPS, frame, type Anim, type BlobState, type Clip } from 'blob-avatar/engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
-import { LiveSvg } from '../../render/svg';
+import { LiveSvg } from 'blob-avatar/render/svg';
 import { toast } from '../hooks';
 import { Button } from '../primitives/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip';

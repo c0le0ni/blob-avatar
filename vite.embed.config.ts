@@ -31,7 +31,7 @@ export default defineConfig({
     target: 'es2020',
     emptyOutDir: false,
     lib: {
-      entry: resolve(import.meta.dirname, 'src/embed/blob-avatar.ts'),
+      entry: resolve(import.meta.dirname, 'packages/blob-avatar/src/element.ts'),
       formats: ['iife'],
       name: 'BlobAvatar',
       fileName: () => 'embed.js',

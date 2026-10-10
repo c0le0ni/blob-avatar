@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
-import { fromHash, fromParams, randomLook, randomState, toHash } from '../src/engine/codec';
-import { springGaze, type Gaze } from '../src/engine/gaze';
-import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
-import { shapeContour } from '../src/engine/shapes';
-import { toSvgString } from '../src/render/svg';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from 'blob-avatar/engine';
+import { fromHash, fromParams, randomLook, randomState, toHash } from 'blob-avatar/engine/codec';
+import { springGaze, type Gaze } from 'blob-avatar/engine/gaze';
+import { bounds, polygonArea, resample, type Contour, type Pt } from 'blob-avatar/engine/contour';
+import { shapeContour } from 'blob-avatar/engine/shapes';
+import { toSvgString } from 'blob-avatar/render/svg';
 
 const state = (p: Partial<BlobState> = {}): BlobState => ({ ...cloneState(DEFAULT_STATE), ...p });
 const counts = (m: RenderModel) => [m.body.c.x.length, m.hole.x.length, m.eyes[0].c.x.length, m.eyes[1].c.x.length, m.parts.length, ...m.parts.map((p) => p.c.x.length), m.back.length, m.front.length, ...[...m.back, ...m.front].map((t) => t.x.length)].join(',');

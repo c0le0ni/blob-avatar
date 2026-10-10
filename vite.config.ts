@@ -3,9 +3,14 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
-// The app: two pages (English at /, Portuguese at /pt/) sharing one bundle.
+// The app: two pages (English at /, Portuguese at /pt/) sharing one bundle. It
+// imports the blob-avatar package from its source, so the site always runs exactly
+// what gets published.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: [{ find: /^blob-avatar\/(.*)$/, replacement: `${resolve(import.meta.dirname, 'packages/blob-avatar/src')}/$1` }],
+  },
   build: {
     target: 'es2022',
     modulePreload: { polyfill: false },

@@ -19,10 +19,16 @@
     "types": [
       "vite/client"
     ],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "blob-avatar/*": [
+        "./packages/blob-avatar/src/*"
+      ]
+    }
   },
   "include": [
     "src",
-    "test"
+    "test",
+    "packages/blob-avatar/src"
   ]
 }

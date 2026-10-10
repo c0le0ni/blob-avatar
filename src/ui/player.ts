@@ -8,9 +8,9 @@
 // In Animate it shows the real pose wherever the playhead is, starts paused, and
 // plays when someone asks: pressing Play is a request for motion.
 
-import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from '../engine';
-import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
-import { LiveSvg } from '../render/svg';
+import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from 'blob-avatar/engine';
+import { gazeTarget, springGaze, type Gaze } from 'blob-avatar/engine/gaze';
+import { LiveSvg } from 'blob-avatar/render/svg';
 
 export type Mode = 'customize' | 'animate';
 

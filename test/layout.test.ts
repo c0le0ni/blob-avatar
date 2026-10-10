@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CYCLE } from '../src/engine';
+import { DEFAULT_CYCLE } from 'blob-avatar/engine';
 import { LABEL_GAP, MIN_CHIP, ZOOMS, clipAt, dropAt, dropIndex, edgeSpeed, pxPerSec, startsOf, tOf, tickStep, ticks, xOf, zoomStep } from '../src/ui/animate/layout';
 
 const all = DEFAULT_CYCLE.map((c) => c.dur);

@@ -1,8 +1,8 @@
 // Getting the avatar out: files to download and things to copy.
 
-import { frame, loopLength, type BlobState } from '../engine';
+import { frame, loopLength, type BlobState } from 'blob-avatar/engine';
 import { drawModel } from '../render/canvas';
-import { toSvgString } from '../render/svg';
+import { toSvgString } from 'blob-avatar/render/svg';
 import { animatedSvg } from './smil';
 
 export interface ExportOptions {

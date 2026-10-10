@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CYCLE, DEFAULT_STATE, cloneState, type BlobState } from '../src/engine';
-import { toHash } from '../src/engine/codec';
+import { DEFAULT_CYCLE, DEFAULT_STATE, cloneState, type BlobState } from 'blob-avatar/engine';
+import { toHash } from 'blob-avatar/engine/codec';
 import { ALL, NAME_MAX, NEW, TEMPLATES, addClip, bookFor, duplicateClip, insertClip, parseSaved, removeClip, starts, templateOf, type SavedCycle } from '../src/ui/cycles';
 import { createEditor, cyclesOf } from '../src/ui/editor';
 import { COALESCE_MS, LIMIT, createHistory, gestureKey, push, redo, undo } from '../src/ui/history';

@@ -5,7 +5,7 @@
 import { Copy, Minus, Plus, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { DEFAULT_DUR, type Clip } from '../../engine';
+import { DEFAULT_DUR, type Clip } from 'blob-avatar/engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
 import { clampDur } from '../cycles';

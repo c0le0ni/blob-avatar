@@ -2,7 +2,7 @@
 // first six are also the strip of examples for product cards and the README
 // (brand.ts, stripSvg).
 
-import type { BlobState } from './engine';
+import type { BlobState } from 'blob-avatar/engine';
 
 export type Look = Pick<BlobState, 'shape' | 'color' | 'expression'>;
 

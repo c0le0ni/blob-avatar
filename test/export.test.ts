@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STATE, cloneState } from '../src/engine';
-import { randomState } from '../src/engine/codec';
+import { DEFAULT_STATE, cloneState } from 'blob-avatar/engine';
+import { randomState } from 'blob-avatar/engine/codec';
 import { diffFrame, GifWriter, Histogram, indexPixels, lzw, makePalette } from '../src/export/gif';
 import { animatedSvg } from '../src/export/smil';
 

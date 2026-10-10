@@ -1,7 +1,7 @@
 // Every word on the page, in English and Portuguese. The page generator
 // (scripts/pages.ts) and the app read the same strings.
 
-import type { Anim, Expression, Shape } from '../engine';
+import type { Anim, Expression, Shape } from 'blob-avatar/engine';
 
 const en = {
   lang: 'en',

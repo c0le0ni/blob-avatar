@@ -1,8 +1,8 @@
 // Canvas output: the same render model, drawn with Path2D. Used for PNG and GIF.
 
-import { toOpenPath, toPath } from '../engine/contour';
-import { VIEW, type RenderModel, type Trail } from '../engine/frame';
-import { bodyPath, gapClip, hasGap } from './svg';
+import { toOpenPath, toPath } from 'blob-avatar/engine/contour';
+import { VIEW, type RenderModel, type Trail } from 'blob-avatar/engine/frame';
+import { bodyPath, gapClip, hasGap } from 'blob-avatar/render/svg';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 

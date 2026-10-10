@@ -11,9 +11,9 @@
 // One animation loop drives every avatar on the page (driver.ts), and only the
 // ones on screen are drawn.
 
-import { DEFAULT_STATE } from '../engine';
-import { fromHash, fromParams } from '../engine/codec';
-import { LiveSvg } from '../render/svg';
+import { DEFAULT_STATE } from './engine';
+import { fromHash, fromParams } from './engine/codec';
+import { LiveSvg } from './render/svg';
 import { drive, reactionOf, type Driver } from './driver';
 
 const ATTRS = ['shape', 'color', 'expression', 'expr', 'animation', 'anim', 'seed', 'size', 'gaze', 'paused', 'state', 'reaction'];

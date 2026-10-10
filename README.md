@@ -95,7 +95,7 @@ ignored, so check old snippets against the table above.
 ## How it works
 
 Everything is drawn from scratch, every frame, by a small engine with no
-dependencies (`src/engine`).
+dependencies (`packages/blob-avatar/src/engine`).
 
 - **One structure for every outline.** The body is a closed curve with a fixed
   number of points, each eye is another, and so are the dots and lines some

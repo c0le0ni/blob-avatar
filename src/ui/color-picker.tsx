@@ -1,7 +1,7 @@
 import { Pipette, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { PALETTE } from '../engine';
+import { PALETTE } from 'blob-avatar/engine';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { hexToHsv, hsvToHex, normalizeHex, type Hsv } from './color';

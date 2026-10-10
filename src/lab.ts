@@ -4,8 +4,8 @@
 //   ?strip=thinking    one animation as 16 still frames
 //   ?wordmark          the logo, big, on dark and light
 
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, IDLE_CYCLE, PALETTE, SHAPES, frame, cloneState, type Anim, type BlobState } from './engine';
-import { LiveSvg } from './render/svg';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, IDLE_CYCLE, PALETTE, SHAPES, frame, cloneState, type Anim, type BlobState } from 'blob-avatar/engine';
+import { LiveSvg } from 'blob-avatar/render/svg';
 import { wordmarkSvg } from './brand';
 
 const root = document.getElementById('lab')!;

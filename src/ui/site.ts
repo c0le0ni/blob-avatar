@@ -1,8 +1,8 @@
 // What the app says about the avatar outside the stage: its description, the
 // thumbnails in the option grids and the embed snippet.
 
-import { DEFAULT_DUR, DEFAULT_STATE, IDLE_CYCLE, PALETTE, SHOW_AT, cloneState, frame, type Anim, type BlobState, type RenderModel } from '../engine';
-import { toSvgString } from '../render/svg';
+import { DEFAULT_DUR, DEFAULT_STATE, IDLE_CYCLE, PALETTE, SHOW_AT, cloneState, frame, type Anim, type BlobState, type RenderModel } from 'blob-avatar/engine';
+import { toSvgString } from 'blob-avatar/render/svg';
 import type { Strings } from '../i18n/strings';
 
 export const SITE = 'https://blob.coleoni.com';

@@ -1,7 +1,7 @@
 import { Palette, Shapes, Smile } from 'lucide-react';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { EXPRESSIONS, SHAPES, type BlobState } from '../engine';
+import { EXPRESSIONS, SHAPES, type BlobState } from 'blob-avatar/engine';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColorSwatches } from './color-picker';

@@ -1,8 +1,8 @@
 import { ChevronDown, CodeXml, Copy, Download, Film, Image, Link, LoaderCircle, Sparkles, Spline } from 'lucide-react';
 import { useState } from 'react';
 import type { ComponentType, KeyboardEvent, ReactNode } from 'react';
-import { IDLE_CYCLE, loopLength, type BlobState } from '../engine';
-import { toHash } from '../engine/codec';
+import { IDLE_CYCLE, loopLength, type BlobState } from 'blob-avatar/engine';
+import { toHash } from 'blob-avatar/engine/codec';
 import { copyPng, copySvg, downloadAnimatedSvg, downloadGif, downloadPng, downloadSvg, type ExportOptions } from '../export';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';

@@ -1,7 +1,7 @@
 import { Clapperboard, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { DEFAULT_DUR, MAX_CLIPS, loopLength, type Anim } from '../engine';
-import { randomLook } from '../engine/codec';
+import { DEFAULT_DUR, MAX_CLIPS, loopLength, type Anim } from 'blob-avatar/engine';
+import { randomLook } from 'blob-avatar/engine/codec';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';

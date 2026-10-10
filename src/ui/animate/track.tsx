@@ -5,7 +5,7 @@
 
 import { GripVertical } from 'lucide-react';
 import type { KeyboardEvent, RefObject } from 'react';
-import type { Clip } from '../../engine';
+import type { Clip } from 'blob-avatar/engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip';

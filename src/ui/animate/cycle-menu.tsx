@@ -5,7 +5,7 @@
 import { Check, ChevronDown, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import type { Clip } from '../../engine';
+import type { Clip } from 'blob-avatar/engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
 import { NAME_MAX, NEW, TEMPLATES, starts, templateOf, type SavedCycle } from '../cycles';

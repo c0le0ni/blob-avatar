@@ -4,11 +4,11 @@
 // of the app (where the o breathes and blinks) and exported as static SVG files for
 // coleoni.com, the README and social images.
 
-import { DEFAULT_STATE, frame, cloneState, type BlobState } from './engine';
-import { bounds, make, polygonArea, resample, toPath, type Contour, type Pt } from './engine/contour';
-import { blink } from './engine/motion';
+import { DEFAULT_STATE, frame, cloneState, type BlobState } from 'blob-avatar/engine';
+import { bounds, make, polygonArea, resample, toPath, type Contour, type Pt } from 'blob-avatar/engine/contour';
+import { blink } from 'blob-avatar/engine/motion';
 import { PRESETS } from './presets';
-import { layersMarkup } from './render/svg';
+import { layersMarkup } from 'blob-avatar/render/svg';
 
 /** pixel size, in wordmark units */
 const P = 4;

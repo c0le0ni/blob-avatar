@@ -3,10 +3,10 @@
 // reaction to a click. drive() runs a LiveSvg inside a host element: <blob-avatar>
 // uses it, and so can anything else that draws one.
 
-import { DEFAULT_STATE, POKE, frame, loopLength, type BlobState, type FrameInput, type Reaction } from '../engine';
-import { parseCycle } from '../engine/codec';
-import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
-import type { LiveSvg } from '../render/svg';
+import { DEFAULT_STATE, POKE, frame, loopLength, type BlobState, type FrameInput, type Reaction } from './engine';
+import { parseCycle } from './engine/codec';
+import { gazeTarget, springGaze, type Gaze } from './engine/gaze';
+import type { LiveSvg } from './render/svg';
 
 export interface Options {
   state: BlobState;
