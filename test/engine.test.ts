@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
-import { fromHash, randomState, toHash } from '../src/engine/codec';
+import { fromHash, fromParams, randomState, toHash } from '../src/engine/codec';
 import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
 import { shapeContour } from '../src/engine/shapes';
 import { toSvgString } from '../src/render/svg';
@@ -139,6 +139,19 @@ describe('codec', () => {
     expect(s.cycle[0].dur).toBe(10);
     expect(s.seed).toBe(DEFAULT_STATE.seed);
     expect(toSvgString(frame(s, 1))).not.toMatch(/script|<x/);
+  });
+
+  it("opens the first version's names: the ones that came back as they are, the gone expressions as the nearest ones", () => {
+    for (const shape of ['ghost', 'star']) expect(fromHash(`#shape=${shape}`).shape).toBe(shape);
+    for (const expr of ['wink', 'worried', 'focused', 'smug']) expect(fromHash(`#expr=${expr}`).expression).toBe(expr);
+    const nearest = { joy: 'laughing', love: 'happy', starry: 'excited', dizzy: 'confused' };
+    for (const [old, now] of Object.entries(nearest)) {
+      expect(fromHash(`#expr=${old}`).expression).toBe(now);
+      expect(fromParams((k) => (k === 'expression' ? old : null)).expression).toBe(now);
+    }
+    // nothing an object inherits passes for an old name
+    const s = fromHash('#shape=constructor&expr=toString');
+    expect([s.shape, s.expression]).toEqual([DEFAULT_STATE.shape, DEFAULT_STATE.expression]);
   });
 
   it('opens a first-version link with what still exists', () => {

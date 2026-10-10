@@ -14,8 +14,14 @@ const oneOf = <T extends string>(list: readonly T[], v: string | null | undefine
 const hex = (v: string | null | undefined, fallback: string) => (v && isHex(v) ? `#${v.replace('#', '').toLowerCase()}` : fallback);
 const clampDur = (v: number) => Math.min(10, Math.max(0.4, Math.round(v * 10) / 10));
 
-/** names from the first version of the links, so old links still open close to what they showed */
+/**
+ * Names from the first version of the links, so old links still open close to what
+ * they showed: shapes that were renamed, and expressions that are gone, each to the
+ * nearest one now. The rest of the old names (ghost, star, wink...) are still names.
+ */
 const OLD_SHAPES: Record<string, string> = { orb: 'circle', bean: 'pebble', block: 'squircle', pill: 'capsule', tri: 'triangle', hex: 'hexagon', puff: 'cloud', drop: 'droplet' };
+const OLD_EXPRESSIONS: Record<string, string> = { joy: 'laughing', love: 'happy', starry: 'excited', dizzy: 'confused' };
+const renamed = (old: Record<string, string>, v: string | null | undefined) => (v && Object.prototype.hasOwnProperty.call(old, v) ? old[v] : v);
 
 export function parseCycle(v: string | null | undefined): Clip[] | null {
   if (!v) return null;
@@ -36,10 +42,9 @@ const seedOf = (v: string | null | undefined, fallback: number) => (v && /^[0-9a
 /** read a state from key/value pairs (link hash, element attributes) */
 export function fromParams(get: (k: string) => string | null | undefined, base: BlobState = DEFAULT_STATE): BlobState {
   const s = cloneState(base);
-  const shape = get('shape');
-  s.shape = oneOf(SHAPES, shape && OLD_SHAPES[shape] ? OLD_SHAPES[shape] : shape, s.shape);
+  s.shape = oneOf(SHAPES, renamed(OLD_SHAPES, get('shape')), s.shape);
   s.color = hex(get('color'), s.color);
-  s.expression = oneOf(EXPRESSIONS, get('expr') ?? get('expression'), s.expression);
+  s.expression = oneOf(EXPRESSIONS, renamed(OLD_EXPRESSIONS, get('expr') ?? get('expression')), s.expression);
   s.cycle = parseCycle(get('anim') ?? get('animation')) ?? s.cycle;
   s.seed = seedOf(get('seed'), s.seed);
   return s;
