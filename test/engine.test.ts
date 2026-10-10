@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
 import { fromHash, randomState, toHash } from '../src/engine/codec';
-import { bounds, polygonArea, resample, type Pt } from '../src/engine/contour';
+import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
 import { shapeContour } from '../src/engine/shapes';
 import { toSvgString } from '../src/render/svg';
 
@@ -65,6 +65,15 @@ describe('frame', () => {
   });
 });
 
+/** whether (x, y) is inside a closed outline (even-odd) */
+function inside(c: Contour, x: number, y: number): boolean {
+  let hit = false;
+  for (let i = 0, j = c.x.length - 1; i < c.x.length; j = i++) {
+    if (c.y[i] > y !== c.y[j] > y && x < ((c.x[j] - c.x[i]) * (y - c.y[i])) / (c.y[j] - c.y[i]) + c.x[i]) hit = !hit;
+  }
+  return hit;
+}
+
 describe('shapes', () => {
   it('twelve shapes, all about the size of the circle, and none reaching far past it', () => {
     expect(SHAPES).toHaveLength(12);
@@ -98,6 +107,19 @@ describe('shapes', () => {
     expect(c.x[1]).toBeGreaterThan(0);
   });
 
+  it('keeps both eyes inside the body at rest, and apart from each other, for every shape and expression', () => {
+    for (const shape of SHAPES) {
+      for (const expression of EXPRESSIONS) {
+        const rest = frame(state({ shape, expression }), 0, { still: true });
+        for (const e of rest.eyes) for (let i = 0; i < e.c.x.length; i++) expect(inside(rest.body.c, e.c.x[i], e.c.y[i]), `${shape} ${expression}`).toBe(true);
+        // a glance turns the head (on a circle an eye can go round the rim), and the eyes still keep apart
+        for (const gaze of [null, [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6], [-0.6, -0.6]] as const) {
+          const [a, b] = (gaze ? frame(state({ shape, expression }), 0, { gaze: [...gaze] }) : rest).eyes;
+          for (let i = 0; i < a.c.x.length; i++) expect(inside(b.c, a.c.x[i], a.c.y[i]) || inside(a.c, b.c.x[i], b.c.y[i]), `${shape} ${expression} ${gaze}`).toBe(false);
+        }
+      }
+    }
+  });
 });
 
 describe('codec', () => {

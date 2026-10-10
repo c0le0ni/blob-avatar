@@ -3,7 +3,7 @@
 
 import { PART_SLOTS, TRAIL_POINTS, TRAIL_SLOTS } from './animations';
 import { autoEyeColor, mixHex } from './color';
-import { blend, clone, make, size, type Contour } from './contour';
+import { blend, clone, make, size, type Contour, type Pt } from './contour';
 import { blendFace, eyeOutline, FACES, turnEye, type EyePose } from './face';
 import { disc, EYE_POINTS } from './glyphs';
 import { clamp, lerp, smooth } from './math';
@@ -62,6 +62,55 @@ const dot = (x: number, y: number, r: number) => {
   return out;
 };
 
+/** an eye fitted on the body, in body units: its outline, its center and how much it shows */
+interface Fitted {
+  c: Contour;
+  x: number;
+  y: number;
+  alpha: number;
+}
+
+/** the space kept between the eyes, in body radii */
+const EYE_GAP = 0.03;
+
+/** whether two eyes, each shrunk by s around its center, keep EYE_GAP between them */
+function clear(a: Fitted, b: Fitted, s: number): boolean {
+  const at = (e: Fitted, i: number): Pt => [e.x + (e.c.x[i] - e.x) * s, e.y + (e.c.y[i] - e.y) * s];
+  for (const [p, q] of [[a, b], [b, a]]) {
+    for (let i = 0; i < EYE_POINTS; i++) {
+      // how far the point is outside q: eyes are convex, so the farthest it is past any side
+      const [x, y] = at(p, i);
+      let out = -Infinity;
+      for (let j = 0, k = EYE_POINTS - 1; j < EYE_POINTS; k = j++) {
+        const [x1, y1] = at(q, k), [x2, y2] = at(q, j);
+        const side = (u: number, v: number) => ((u - x1) * (y2 - y1) - (v - y1) * (x2 - x1)) / (Math.hypot(x2 - x1, y2 - y1) || 1);
+        out = Math.max(out, side(x, y) * -Math.sign(side(q.x, q.y)));
+      }
+      if (out < EYE_GAP) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * On a shape that narrows, each eye is pulled toward the center on its own, and the
+ * two can meet. When they come closer than EYE_GAP, both shrink around their centers
+ * just enough to keep it (down to 60%); a hidden eye counts less. Eyes that keep
+ * their distance are left exactly as they are.
+ */
+function apart(a: Fitted, b: Fitted) {
+  const weight = Math.min(a.alpha, b.alpha);
+  if (weight <= 0 || clear(a, b, 1)) return;
+  let lo = 0.6, hi = 1;
+  for (let i = 0; i < 7; i++) {
+    const mid = (lo + hi) / 2;
+    if (clear(a, b, mid)) lo = mid;
+    else hi = mid;
+  }
+  const s = 1 - (1 - lo) * weight;
+  for (const e of [a, b]) for (let i = 0; i < EYE_POINTS; i++) [e.c.x[i], e.c.y[i]] = [e.x + (e.c.x[i] - e.x) * s, e.y + (e.c.y[i] - e.y) * s];
+}
+
 export function frame(state: BlobState, t: number, input: FrameInput = {}): RenderModel {
   const L = loopLength(state) || 2.4;
   const still = !!input.still;
@@ -106,7 +155,7 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
   const open = (still ? 1 : blink(t, state.seed, L)) * (1 - clamp(m.shut, 0, 1)) * clamp(input.open ?? 1, 0, 1);
   const eyeFill = autoEyeColor(state.color);
 
-  const eye = (p: EyePose): Layer => {
+  const fitted = (p: EyePose): Fitted => {
     const { pose, z } = turnEye(p, yaw, pitch);
     // on other shapes the face spreads to their edge: the eye keeps its direction from
     // the center and its distance follows the edge; figures already place their eyes
@@ -123,9 +172,14 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
         c = eyeOutline(pose, open, pose.x * k, pose.y * k);
       }
     }
-    for (let i = 0; i < EYE_POINTS; i++) [c.x[i], c.y[i]] = place(c.x[i], c.y[i]);
-    return { c, fill: eyeFill, alpha: clamp(m.eyeAlpha, 0, 1) * smooth(z / 0.12) };
+    return { c, x: pose.x * k, y: pose.y * k, alpha: clamp(m.eyeAlpha, 0, 1) * smooth(z / 0.12) };
   };
+  const pair = [fitted(face.left), fitted(face.right)] as const;
+  if (state.shape !== 'circle' && figured < 0.5) apart(pair[0], pair[1]);
+  const eyes = pair.map(({ c, alpha }): Layer => {
+    for (let i = 0; i < EYE_POINTS; i++) [c.x[i], c.y[i]] = place(c.x[i], c.y[i]);
+    return { c, fill: eyeFill, alpha };
+  }) as [Layer, Layer];
 
   // ---------------------------------------------------------------- dots, gap and lines (not squashed)
   const parts: Layer[] = [];
@@ -148,7 +202,7 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
     body: { c: body, fill: state.color, alpha: 1 },
     hole,
     parts,
-    eyes: [eye(face.left), eye(face.right)],
+    eyes,
     front,
   };
 }
