@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CYCLE, DEFAULT_STATE, cloneState, type BlobState } from '../src/engine';
 import { toHash } from '../src/engine/codec';
-import { ALL, NEW, addClip, bookFor, removeClip, type SavedCycle } from '../src/ui/cycles';
+import { ALL, NAME_MAX, NEW, TEMPLATES, addClip, bookFor, duplicateClip, insertClip, parseSaved, removeClip, starts, templateOf, type SavedCycle } from '../src/ui/cycles';
 import { createEditor, cyclesOf } from '../src/ui/editor';
 import { COALESCE_MS, LIMIT, createHistory, gestureKey, push, redo, undo } from '../src/ui/history';
 
@@ -125,6 +125,79 @@ describe('editor', () => {
     e.undo();
     expect(e.doc.blob.cycle[0].dur).not.toBe(2);
     expect(e.doc.book.saved[0].clips[0].dur).toBe(e.doc.blob.cycle[0].dur);
+  });
+
+  it('says when editing a template made a new cycle, and only then', () => {
+    const e = open();
+    const fresh = e.changeCycle((cs) => insertClip(cs, 1, 'wink'));
+    expect(fresh).toMatchObject({ id: 'c1', n: 1 });
+    expect(e.doc.book.active).toBe('c1');
+    expect(e.changeCycle((cs) => duplicateClip(cs, 0))).toBeNull();
+    expect(e.changeCycle((cs) => cs)).toBeNull();
+    expect(e.doc.blob.cycle.slice(0, 3).map((c) => c.anim)).toEqual(['idle', 'idle', 'wink']);
+    // a template picked again forks into the next number
+    e.selectCycle('tpl:hello');
+    expect(e.doc.book.active).toBe('tpl:hello');
+    expect(e.changeCycle((cs) => removeClip(cs, 0))).toMatchObject({ n: 2 });
+  });
+
+  it('renames, copies and deletes cycles, each one an undo step', () => {
+    const mine: SavedCycle = { id: 'm', n: 1, clips: [{ anim: 'sleep', dur: 4 }] };
+    const e = open([mine]);
+    e.renameCycle('m', '  Night   owl ');
+    expect(e.doc.book.saved[0].name).toBe('Night owl');
+    e.renameCycle('m', ' ');
+    expect(e.doc.book.saved[0]).toEqual(mine);
+    e.undo();
+    expect(e.doc.book.saved[0].name).toBe('Night owl');
+    // a copy sits right after what it copies, and goes on screen
+    const copy = e.copyCycle('m', 'Night owl copy');
+    expect(copy).toMatchObject({ n: 2, name: 'Night owl copy' });
+    expect(e.doc.book.saved.map((c) => c.id)).toEqual(['m', copy!.id]);
+    expect(e.doc.book.active).toBe(copy!.id);
+    expect(e.doc.blob.cycle).toEqual(mine.clips);
+    // deleting one that is not on screen leaves the screen alone
+    const shown = e.doc.blob;
+    e.removeCycle('m');
+    expect(e.doc.book.saved.map((c) => c.id)).toEqual([copy!.id]);
+    expect(e.doc.blob).toBe(shown);
+    e.undo();
+    expect(e.doc.book.saved.length).toBe(2);
+    // a template can be copied too, and is never deleted
+    expect(e.copyCycle('tpl:show')?.clips.length).toBe(templateOf('tpl:show')!.clips.length);
+    const before = e.history();
+    e.removeCycle('tpl:show');
+    e.removeCycle(ALL);
+    expect(e.history()).toBe(before);
+  });
+
+  it('opens a link on a template before the cycles of the person that match it', () => {
+    const hello = templateOf('tpl:hello')!;
+    const twin: SavedCycle = { id: 'twin', n: 1, clips: hello.clips.map((c) => ({ ...c })) };
+    expect(bookFor([twin], hello.clips).active).toBe('tpl:hello');
+    expect(bookFor([twin], DEFAULT_CYCLE).active).toBe(ALL);
+    for (const t of TEMPLATES) expect(bookFor([], t.clips)).toEqual({ saved: [], active: t.id });
+    // only "every animation" is too long for a light GIF
+    for (const t of TEMPLATES) expect(starts(t.clips).length > 10).toBe(t.id === ALL);
+    expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
+  });
+
+  it('reads cycles saved before they had names, and keeps names well formed', () => {
+    const raw = [
+      { id: 'a', n: 1, clips: [{ anim: 'idle', dur: 2 }] },
+      { id: 'b', n: 2, name: '  My   intro ', clips: [{ anim: 'wink', dur: 1.66 }] },
+      { id: 'c', n: 3, name: 42, clips: [{ anim: 'wink', dur: 1 }] },
+      { id: 'd', n: 4, name: 'x'.repeat(90), clips: [{ anim: 'wink', dur: 1 }] },
+      { id: 'e', n: 5, name: 'Bad', clips: [{ anim: 'nope', dur: 1 }] },
+    ];
+    const saved = parseSaved(raw);
+    expect(saved.map((c) => c.id)).toEqual(['a', 'b', 'c', 'd']);
+    expect(saved[0]).toEqual({ id: 'a', n: 1, clips: [{ anim: 'idle', dur: 2 }] });
+    expect(saved[1]).toEqual({ id: 'b', n: 2, name: 'My intro', clips: [{ anim: 'wink', dur: 1.7 }] });
+    expect('name' in saved[2]).toBe(false);
+    expect(saved[3].name?.length).toBe(NAME_MAX);
+    // and a named one comes back the same from storage
+    expect(parseSaved(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
   });
 
   it('finds the place of an avatar loaded from outside among the cycles', () => {

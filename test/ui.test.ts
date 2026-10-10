@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from '../src/engine';
+import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from '../src/engine';
 import { hexToHsv, hsvToHex, normalizeHex } from '../src/ui/color';
-import { addClip, clampDur, moveClip, removeClip, resizeClip, sameClips, starts } from '../src/ui/cycles';
+import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts } from '../src/ui/cycles';
 import { FULL_VIEW, animThumb, embedCode } from '../src/ui/site';
 
 describe('color picker', () => {
@@ -53,6 +53,31 @@ describe('cycle editing', () => {
     expect(removeClip(clips, 1).map((c) => c.anim)).toEqual(['idle', 'orbit']);
     for (let i = 0; i < MAX_CLIPS + 5; i++) one = addClip(one, 'wink');
     expect(one.length).toBe(MAX_CLIPS);
+  });
+
+  it('inserts an animation at its usual length at any place, and never past the limit', () => {
+    expect(insertClip(clips, 1, 'comet').map((c) => c.anim)).toEqual(['idle', 'comet', 'wink', 'orbit']);
+    expect(insertClip(clips, 1, 'comet')[1].dur).toBe(DEFAULT_DUR.comet);
+    expect(insertClip(clips, 0, 'sleep')[0].anim).toBe('sleep');
+    expect(insertClip(clips, 3, 'sleep')[3].anim).toBe('sleep');
+    // a place out of range lands at the nearest end
+    expect(insertClip(clips, 99, 'sleep')[3].anim).toBe('sleep');
+    expect(insertClip(clips, -4, 'sleep')[0].anim).toBe('sleep');
+    expect(addClip(clips, 'egg').at(-1)?.anim).toBe('egg');
+    const full = Array.from({ length: MAX_CLIPS }, (): Clip => ({ anim: 'idle', dur: 1 }));
+    expect(insertClip(full, 2, 'wink')).toBe(full);
+    expect(clips.length).toBe(3);
+  });
+
+  it('duplicates a clip right after itself, with its length', () => {
+    const resized = resizeClip(clips, 1, 3.1);
+    const twice = duplicateClip(resized, 1);
+    expect(twice.map((c) => c.anim)).toEqual(['idle', 'wink', 'wink', 'orbit']);
+    expect(twice[2]).toEqual({ anim: 'wink', dur: 3.1 });
+    expect(twice[2]).not.toBe(twice[1]);
+    expect(duplicateClip(clips, 7)).toBe(clips);
+    const full = Array.from({ length: MAX_CLIPS }, (): Clip => ({ anim: 'idle', dur: 1 }));
+    expect(duplicateClip(full, 0)).toBe(full);
   });
 
   it('knows where each clip starts', () => {

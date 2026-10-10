@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 import { cloneState, DEFAULT_STATE, type BlobState, type Clip } from '../engine';
 import { fromHash, toHash } from '../engine/codec';
-import { bookFor, dropCycle, parseSaved, pickCycle, sameClips, uid, withClips, type Book } from './cycles';
+import { bookFor, copyCycle, dropCycle, parseSaved, pickCycle, renameCycle, sameClips, uid, withClips, type Book, type SavedCycle } from './cycles';
 import { createHistory, push, redo, undo, type History } from './history';
 
 export interface Doc {
@@ -54,19 +54,40 @@ export function createEditor(initial: Doc, newId: () => string = uid, now = () =
       return h.present;
     },
     edit,
-    /** change the cycle on screen; the built-in one turns into a new cycle of the person's */
-    changeCycle(f: (clips: Clip[]) => Clip[], key?: string) {
+    /**
+     * change the cycle on screen; a template turns into a new cycle of the person's,
+     * which comes back (so the page can say so), and null otherwise
+     */
+    changeCycle(f: (clips: Clip[]) => Clip[], key?: string): SavedCycle | null {
       const clips = h.present.blob.cycle;
       const next = f(clips);
-      if (next !== clips) show(withClips(h.present.book, next, newId), next, key);
+      if (next === clips) return null;
+      const was = h.present.book;
+      const book = withClips(was, next, newId);
+      show(book, next, key);
+      return book.active === was.active ? null : (book.saved.find((c) => c.id === book.active) ?? null);
     },
     selectCycle(id: string) {
       const hit = pickCycle(h.present.book, id, newId);
       if (hit) show(hit.book, hit.clips);
     },
-    removeCycle() {
-      const { book, clips } = dropCycle(h.present.book);
-      show(book, clips);
+    /** delete one of the person's cycles (the one on screen by default) */
+    removeCycle(id?: string) {
+      const { book, clips } = dropCycle(h.present.book, id);
+      if (book === h.present.book) return;
+      if (clips) show(book, clips);
+      else put({ ...h.present, book });
+    },
+    renameCycle(id: string, name: string) {
+      const book = renameCycle(h.present.book, id, name);
+      if (book !== h.present.book) put({ ...h.present, book });
+    },
+    /** a copy of a cycle as a new one of the person's, put on screen; returns it */
+    copyCycle(id: string, name?: string): SavedCycle | null {
+      const hit = copyCycle(h.present.book, id, name, newId);
+      if (!hit) return null;
+      show(hit.book, hit.clips);
+      return hit.book.saved.find((c) => c.id === hit.book.active) ?? null;
     },
     /** a whole avatar from outside (the address bar): its cycle finds its place among the person's */
     load(blob: BlobState) {
@@ -93,9 +114,11 @@ export function cyclesOf(editor: Editor, book: Book) {
     active: book.active,
     change: editor.changeCycle,
     select: editor.selectCycle,
-    /** delete the cycle on screen; returns its undo */
-    remove: () => {
-      editor.removeCycle();
+    rename: editor.renameCycle,
+    copy: editor.copyCycle,
+    /** delete a cycle of the person's (the one on screen by default); returns its undo */
+    remove: (id?: string) => {
+      editor.removeCycle(id);
       return editor.undoLast();
     },
   };
