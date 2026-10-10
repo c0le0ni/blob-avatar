@@ -68,3 +68,30 @@ export function keysFor(action: Action, S: Strings): string[][] {
       return [['?']];
   }
 }
+
+/** the keys of the timeline's track (handled there, listed with the rest) */
+export const TRACK_KEYS = ['pick', 'move', 'stretch', 'duplicate', 'loop', 'remove', 'playFrom', 'escape'] as const;
+export type TrackKey = (typeof TRACK_KEYS)[number];
+
+export function trackKeysFor(key: TrackKey): string[] {
+  const alt = MAC ? '⌥' : 'Alt';
+  const shift = MAC ? '⇧' : 'Shift';
+  switch (key) {
+    case 'pick':
+      return ['← →'];
+    case 'move':
+      return [alt, '← →'];
+    case 'stretch':
+      return [shift, '← →'];
+    case 'duplicate':
+      return ['D'];
+    case 'loop':
+      return ['L'];
+    case 'remove':
+      return [MAC ? '⌫' : 'Delete'];
+    case 'playFrom':
+      return [MAC ? '↩' : 'Enter'];
+    case 'escape':
+      return ['Esc'];
+  }
+}

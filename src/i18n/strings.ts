@@ -146,6 +146,8 @@ const en = {
   themes: { system: 'System', light: 'Light', dark: 'Dark' },
   shortcuts: 'Keyboard shortcuts',
   keys: { randomize: 'Randomize', undo: 'Undo', redo: 'Redo', play: 'Play or pause, in Animate', help: 'These shortcuts' },
+  inTimeline: 'On the track, in Animate',
+  trackKeys: { pick: 'Pick an animation', move: 'Move it', stretch: 'Change its length', duplicate: 'Duplicate it', loop: 'Loop it', remove: 'Remove it', playFrom: 'Play from it', escape: 'Stop a preview, or let go' },
   spaceKey: 'Space',
   or: 'or',
   // chrome
@@ -306,6 +308,8 @@ const pt: Strings = {
   themes: { system: 'Sistema', light: 'Claro', dark: 'Escuro' },
   shortcuts: 'Atalhos de teclado',
   keys: { randomize: 'Sortear', undo: 'Desfazer', redo: 'Refazer', play: 'Tocar ou pausar, no Animar', help: 'Estes atalhos' },
+  inTimeline: 'Na trilha, no Animar',
+  trackKeys: { pick: 'Escolher uma animação', move: 'Mover', stretch: 'Mudar a duração', duplicate: 'Duplicar', loop: 'Repetir', remove: 'Remover', playFrom: 'Tocar a partir dela', escape: 'Parar a prévia ou soltar' },
   spaceKey: 'Espaço',
   or: 'ou',
   toLight: 'Mudar para o tema claro',

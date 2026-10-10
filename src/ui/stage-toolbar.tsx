@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './primitives/popover';
 import { Segmented } from './primitives/segmented';
 import { Switch } from './primitives/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
-import { ACTIONS, MAC, keysFor } from './shortcuts';
+import { ACTIONS, MAC, TRACK_KEYS, keysFor, trackKeysFor } from './shortcuts';
 
 // The stage's own tools, in a pill by the blob: a new look, undo, redo and the
 // settings. On a phone they sit in a row under the stage, a finger wide.
@@ -98,6 +98,17 @@ function SettingsPanel({ S, keysOpen, onKeysOpen }: { S: Strings; keysOpen: bool
                       <Keys keys={k} />
                     </Fragment>
                   ))}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="px-2.5 pt-1 pb-1 text-2xs font-medium text-foreground-subtle">{S.inTimeline}</div>
+          <dl className="flex flex-col gap-1.5 px-2.5 pt-1 pb-2">
+            {TRACK_KEYS.map((k) => (
+              <div key={k} className="flex min-h-5 items-center justify-between gap-3">
+                <dt className="text-xs text-foreground-muted">{S.trackKeys[k]}</dt>
+                <dd className="flex shrink-0 items-center">
+                  <Keys keys={trackKeysFor(k)} />
                 </dd>
               </div>
             ))}
