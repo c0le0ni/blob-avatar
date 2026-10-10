@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
-import { fromHash, fromParams, randomState, toHash } from '../src/engine/codec';
+import { fromHash, fromParams, randomLook, randomState, toHash } from '../src/engine/codec';
+import { springGaze, type Gaze } from '../src/engine/gaze';
 import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
 import { shapeContour } from '../src/engine/shapes';
 import { toSvgString } from '../src/render/svg';
@@ -161,5 +162,32 @@ describe('codec', () => {
     expect(s.expression).toBe('happy');
     expect(s.cycle.map((c) => c.anim)).toEqual(['idle', 'sleep']);
     expect(s.seed).toBe(11);
+  });
+});
+
+describe('random look', () => {
+  it('changes the look and never the cycle', () => {
+    const cycle = [{ anim: 'wink' as const, dur: 1.6 }, { anim: 'orbit' as const, dur: 3.4 }];
+    for (let i = 0; i < 500; i++) {
+      const from = i % 2 ? randomState(i) : state({ cycle });
+      const next = randomLook(from, i * 131 + 7);
+      expect(next.cycle).toEqual(from.cycle);
+      expect(next.cycle).not.toBe(from.cycle);
+      expect(next.shape !== from.shape || next.color !== from.color || next.expression !== from.expression).toBe(true);
+      expect(toHash(fromHash(toHash(next)))).toBe(toHash(next));
+    }
+  });
+
+  it('is the same roll for the same seed', () => {
+    expect(toHash(randomLook(state(), 42))).toBe(toHash(randomLook(state(), 42)));
+  });
+});
+
+describe('gaze', () => {
+  it('eases the eyes onto the target and stays there', () => {
+    let g: Gaze = [0, 0, 0, 0];
+    for (let i = 0; i < 120; i++) g = springGaze(g, [0.8, -0.5], 1 / 60);
+    expect(g[0]).toBeCloseTo(0.8, 2);
+    expect(g[1]).toBeCloseTo(-0.5, 2);
   });
 });

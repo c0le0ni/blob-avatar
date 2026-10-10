@@ -12,6 +12,7 @@
 
 import { DEFAULT_STATE, frame, loopLength, type BlobState } from '../engine';
 import { fromHash, fromParams } from '../engine/codec';
+import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
 import { LiveSvg } from '../render/svg';
 
 const ATTRS = ['shape', 'color', 'expression', 'expr', 'animation', 'anim', 'seed', 'size', 'gaze', 'paused', 'state'];
@@ -90,7 +91,7 @@ export class BlobAvatarElement extends HTMLElement {
   private svg: LiveSvg;
   private state: BlobState = DEFAULT_STATE;
   private t = 0;
-  private gaze = { x: 0, y: 0, vx: 0, vy: 0 };
+  private gaze: Gaze = [0, 0, 0, 0];
 
   constructor() {
     super();
@@ -138,7 +139,7 @@ export class BlobAvatarElement extends HTMLElement {
   private draw() {
     const still = this.still();
     const follow = pointerNear && this.hasAttribute('gaze');
-    this.svg.update(frame(this.state, this.t, still ? { still: true } : follow ? { gaze: [this.gaze.x, this.gaze.y] } : {}));
+    this.svg.update(frame(this.state, this.t, still ? { still: true } : follow ? { gaze: [this.gaze[0], this.gaze[1]] } : {}));
   }
 
   /** advance one frame; returns whether it wants more frames */
@@ -146,17 +147,8 @@ export class BlobAvatarElement extends HTMLElement {
     if (this.still() || !this.onScreen || document.hidden) return false;
     const L = loopLength(this.state) || 2.4;
     this.t = (this.t + dt) % L;
-    if (pointer && this.hasAttribute('gaze')) {
-      const r = this.getBoundingClientRect();
-      const k = (v: number) => Math.max(-1, Math.min(1, v));
-      const target = [k((pointer[0] - r.left - r.width / 2) / (innerWidth * 0.4)), k((pointer[1] - r.top - r.height / 2) / (innerHeight * 0.4))];
-      // the eyes ease toward the cursor on a spring
-      const w = 12, g = this.gaze;
-      g.vx += ((target[0] - g.x) * w * w - 2 * w * g.vx) * dt;
-      g.vy += ((target[1] - g.y) * w * w - 2 * w * g.vy) * dt;
-      g.x += g.vx * dt;
-      g.y += g.vy * dt;
-    }
+    // the eyes ease toward the cursor on a spring
+    if (pointer && this.hasAttribute('gaze')) this.gaze = springGaze(this.gaze, gazeTarget(pointer[0], pointer[1], this.getBoundingClientRect(), innerWidth * 0.4, innerHeight * 0.4), dt);
     this.draw();
     return true;
   }
