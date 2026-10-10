@@ -13,7 +13,10 @@ import { make, type Contour } from './contour';
 import { capsule, EYE_POINTS } from './glyphs';
 import { clamp, lerp } from './math';
 
-export const EXPRESSIONS = ['neutral', 'attentive', 'surprised', 'excited', 'happy', 'laughing', 'angry', 'sad', 'scared', 'suspicious', 'confused', 'curious', 'proud', 'shy', 'unimpressed', 'sleepy'] as const;
+export const EXPRESSIONS = [
+  'neutral', 'attentive', 'focused', 'surprised', 'excited', 'happy', 'laughing', 'wink', 'angry', 'sad',
+  'worried', 'scared', 'suspicious', 'confused', 'curious', 'proud', 'smug', 'shy', 'unimpressed', 'sleepy',
+] as const;
 export type Expression = (typeof EXPRESSIONS)[number];
 
 export interface EyePose {
@@ -31,21 +34,31 @@ export interface Face {
 
 const E = (x: number, y: number, w: number, h: number, a: number, b: number, c: number, d: number): EyePose => ({ x, y, w, h, m: [a, b, c, d] });
 
+/** one eye open, the other shut in a line: an expression, and the pose of the wink animation */
+const WINK: Face = { left: E(-0.345, -0.115, 0.24, 0.46, 0.94, 0.06, -0.1, 0.99), right: E(0.205, -0.065, 0.45, 0.09, 0.97, 0.12, -0.1, 0.99) };
+
 export const FACES: Record<Expression, Face> = {
   // looking up and to the right: the capsules sit high on the sphere, foreshortened
   neutral: { left: E(0.188, -0.406, 0.186, 0.412, 0.889, -0.314, 0.414, 0.857), right: E(0.618, -0.51, 0.186, 0.412, 0.667, -0.061, 0.414, 0.857) },
   attentive: { left: E(-0.212, -0.065, 0.21, 0.44, 0.973, -0.095, 0.08, 0.991), right: E(0.336, -0.106, 0.21, 0.44, 0.937, -0.046, 0.08, 0.991) },
+  // a squint straight ahead, the inner ends a touch lower
+  focused: { left: E(-0.208, -0.029, 0.28, 0.2, 0.969, 0.133, -0.136, 0.991), right: E(0.305, -0.048, 0.28, 0.2, 0.943, -0.124, 0.133, 0.991) },
   surprised: { left: E(-0.281, 0.047, 0.45, 0.47, 0.958, 0.021, -0.008, 0.998), right: E(0.369, 0.051, 0.45, 0.47, 0.928, -0.012, -0.008, 0.998) },
   excited: { left: E(-0.239, 0.234, 0.4, 0.56, 0.958, -0.091, 0.149, 0.967), right: E(0.425, 0.231, 0.4, 0.56, 0.887, 0.083, -0.176, 0.969) },
   happy: { left: E(-0.203, -0.155, 0.27, 0.17, 0.952, 0.198, -0.227, 0.967), right: E(0.378, -0.152, 0.27, 0.17, 0.894, -0.188, 0.233, 0.969) },
   laughing: { left: E(-0.236, -0.229, 0.34, 0.13, 0.919, 0.257, -0.31, 0.937), right: E(0.379, -0.232, 0.34, 0.13, 0.86, -0.265, 0.338, 0.934) },
+  wink: WINK,
   angry: { left: E(-0.241, -0.114, 0.34, 0.15, 0.841, 0.47, -0.481, 0.874), right: E(0.343, -0.112, 0.34, 0.15, 0.81, -0.464, 0.472, 0.878) },
   sad: { left: E(-0.228, 0.214, 0.22, 0.4, 0.862, -0.406, 0.449, 0.887), right: E(0.322, 0.212, 0.22, 0.4, 0.831, 0.401, -0.452, 0.89) },
+  // tilted like sad, but higher, looking up
+  worried: { left: E(-0.352, -0.112, 0.24, 0.44, 0.9, -0.314, 0.258, 0.943), right: E(0.315, -0.142, 0.24, 0.44, 0.912, 0.318, -0.262, 0.938) },
   scared: { left: E(-0.322, 0.318, 0.4, 0.6, 0.945, 0.12, -0.011, 0.939), right: E(0.377, 0.319, 0.4, 0.6, 0.925, -0.118, -0.011, 0.939) },
   suspicious: { left: E(-0.073, -0.069, 0.21, 0.4, 0.989, -0.129, 0.124, 0.988), right: E(0.462, -0.127, 0.22, 0.15, 0.877, -0.073, 0.124, 0.988) },
   confused: { left: E(-0.508, -0.09, 0.2, 0.44, 0.851, -0.192, 0.122, 0.977), right: E(0.036, -0.01, 0.28, 0.17, 0.922, 0.384, -0.382, 0.923) },
   curious: { left: E(0, 0.22, 0.24, 0.46, 0.94, -0.332, 0.339, 0.916), right: E(0.532, 0.075, 0.2, 0.38, 0.783, -0.419, 0.317, 0.904) },
   proud: { left: E(-0.202, -0.279, 0.3, 0.15, 0.939, 0.214, -0.274, 0.935), right: E(0.379, -0.279, 0.3, 0.15, 0.87, -0.215, 0.313, 0.935) },
+  // half shut, a sideways look up and to the right
+  smug: { left: E(0.04, -0.12, 0.29, 0.14, 0.984, -0.168, 0.174, 0.979), right: E(0.479, -0.14, 0.27, 0.13, 0.873, -0.027, 0.092, 0.99) },
   shy: { left: E(-0.529, 0.265, 0.17, 0.3, 0.825, -0.054, 0.191, 0.961), right: E(-0.08, 0.209, 0.17, 0.3, 0.977, -0.171, 0.191, 0.961) },
   unimpressed: { left: E(-0.616, -0.036, 0.3, 0.12, 0.785, -0.012, -0.012, 1), right: E(-0.106, -0.037, 0.3, 0.12, 0.994, 0.008, -0.012, 1) },
   // the same eyes as attentive, nearly shut
@@ -54,7 +67,7 @@ export const FACES: Record<Expression, Face> = {
 
 /** eye poses some animations use */
 export const STATE_EYES = {
-  wink: { left: E(-0.345, -0.115, 0.24, 0.46, 0.94, 0.06, -0.1, 0.99), right: E(0.205, -0.065, 0.45, 0.09, 0.97, 0.12, -0.1, 0.99) },
+  wink: WINK,
   wide: { left: E(-0.175, 0.28, 0.36, 0.88, 0.96, 0.26, -0.22, 0.93), right: E(0.435, 0.385, 0.36, 0.88, 0.87, 0.05, -0.22, 0.93) },
   notification: { left: E(-0.68, 0.21, 0.5, 0.5, 0.68, -0.13, 0.24, 0.97), right: E(-0.12, 0.09, 0.5, 0.5, 0.96, -0.23, 0.24, 0.97) },
   egg: { left: E(0.16, -0.34, 0.16, 0.39, 0.88, -0.35, 0.44, 0.86), right: E(0.43, -0.41, 0.16, 0.39, 0.76, -0.19, 0.44, 0.86) },

@@ -88,8 +88,8 @@ const en = {
   // ------------------------------------------------------------ names
   shapes: { circle: 'Circle', pebble: 'Pebble', squircle: 'Squircle', capsule: 'Capsule', triangle: 'Triangle', diamond: 'Diamond', hexagon: 'Hexagon', star: 'Star', cloud: 'Cloud', droplet: 'Droplet', heart: 'Heart', ghost: 'Ghost' } satisfies Record<Shape, string>,
   expressions: {
-    neutral: 'Neutral', attentive: 'Attentive', surprised: 'Surprised', excited: 'Excited', happy: 'Happy', laughing: 'Laughing', angry: 'Angry', sad: 'Sad',
-    scared: 'Scared', suspicious: 'Suspicious', confused: 'Confused', curious: 'Curious', proud: 'Proud', shy: 'Shy', unimpressed: 'Unimpressed', sleepy: 'Sleepy',
+    neutral: 'Neutral', attentive: 'Attentive', focused: 'Focused', surprised: 'Surprised', excited: 'Excited', happy: 'Happy', laughing: 'Laughing', wink: 'Wink', angry: 'Angry', sad: 'Sad',
+    worried: 'Worried', scared: 'Scared', suspicious: 'Suspicious', confused: 'Confused', curious: 'Curious', proud: 'Proud', smug: 'Smug', shy: 'Shy', unimpressed: 'Unimpressed', sleepy: 'Sleepy',
   } satisfies Record<Expression, string>,
   anims: {
     idle: 'Idle', thinking: 'Thinking', wink: 'Wink', wide: 'Wide eyes', alert: 'Alert', notification: 'Notification', exclaim: 'Exclamation',
@@ -179,8 +179,8 @@ const pt: Strings = {
   newTab: '(abre em outra aba)',
   shapes: { circle: 'Círculo', pebble: 'Seixo', squircle: 'Quadrado', capsule: 'Cápsula', triangle: 'Triângulo', diamond: 'Losango', hexagon: 'Hexágono', star: 'Estrela', cloud: 'Nuvem', droplet: 'Gota', heart: 'Coração', ghost: 'Fantasma' },
   expressions: {
-    neutral: 'Neutro', attentive: 'Atento', surprised: 'Surpreso', excited: 'Animado', happy: 'Feliz', laughing: 'Rindo', angry: 'Bravo', sad: 'Triste',
-    scared: 'Assustado', suspicious: 'Desconfiado', confused: 'Confuso', curious: 'Curioso', proud: 'Orgulhoso', shy: 'Tímido', unimpressed: 'Indiferente', sleepy: 'Sonolento',
+    neutral: 'Neutro', attentive: 'Atento', focused: 'Concentrado', surprised: 'Surpreso', excited: 'Animado', happy: 'Feliz', laughing: 'Rindo', wink: 'Piscando', angry: 'Bravo', sad: 'Triste',
+    worried: 'Preocupado', scared: 'Assustado', suspicious: 'Desconfiado', confused: 'Confuso', curious: 'Curioso', proud: 'Orgulhoso', smug: 'Convencido', shy: 'Tímido', unimpressed: 'Indiferente', sleepy: 'Sonolento',
   },
   anims: {
     idle: 'Parado', thinking: 'Pensando', wink: 'Piscadinha', wide: 'Olhos abertos', alert: 'Alerta', notification: 'Notificação', exclaim: 'Exclamação',
