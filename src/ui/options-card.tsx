@@ -10,7 +10,8 @@ import type { Edit } from './editor';
 import type { Mode } from './player';
 import { Segmented } from './primitives/segmented';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
-import { FULL_VIEW, animLook, animThumb, exprThumb, shapeThumb } from './site';
+import { PRESETS, hasLook } from '../presets';
+import { FULL_VIEW, animLook, animThumb, describe, exprThumb, lookThumb, shapeThumb } from './site';
 
 type Tab = 'shape' | 'expression' | 'color';
 
@@ -38,6 +39,37 @@ function TileGroup<T extends string>({ label, values, value, onChange, children 
   return (
     <div ref={group} role="radiogroup" aria-label={label} className="grid animate-panel-in grid-cols-4 gap-1.5" onKeyDown={onKeyDown}>
       {values.map((v) => children(v, v === value))}
+    </div>
+  );
+}
+
+const CHIP = cn(
+  'group/chip grid size-9 shrink-0 snap-start place-items-center rounded-lg outline-offset-0 touch:size-10',
+  'transition-[background-color,box-shadow] duration-(--motion-normal) hover:bg-hover',
+  'data-[on=true]:bg-surface-raised data-[on=true]:shadow-lift',
+);
+
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** the ready-made blobs: a row of looks to start from, each one marked while it is the avatar's */
+function Presets({ state, edit, S }: { state: BlobState; edit: Edit; S: Strings }) {
+  const thumbs = useMemo(() => PRESETS.map((p) => lookThumb(p)), []);
+  return (
+    <div role="group" aria-label={S.presets} className="-m-1 flex snap-x snap-mandatory justify-between gap-1 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:none]">
+      {PRESETS.map((p, i) => {
+        const on = hasLook(state, p);
+        const name = capital(describe({ ...state, ...p }, S));
+        return (
+          <Tooltip key={i}>
+            <TooltipTrigger asChild>
+              <button type="button" aria-pressed={on} aria-label={name} data-on={on} className={CHIP} onClick={() => edit((s) => Object.assign(s, p))}>
+                <span aria-hidden className="block size-7 transition-transform duration-(--motion-slow) ease-out-expo group-hover/chip:scale-110 group-active/chip:scale-95 [&_svg]:block" dangerouslySetInnerHTML={{ __html: thumbs[i] }} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{name}</TooltipContent>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 }
@@ -127,6 +159,7 @@ export function OptionsCard({ state, edit, mode, onAdd, S, className }: { state:
     <section aria-label={S.options} className={cn('flex flex-col gap-3 rounded-xl border border-border bg-surface p-3 shadow-lg', className)}>
       {mode === 'customize' ? (
         <>
+          <Presets state={state} edit={edit} S={S} />
           <Segmented
             tabs
             iconOnly

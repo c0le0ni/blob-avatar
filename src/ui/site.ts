@@ -1,7 +1,7 @@
 // What the app says about the avatar outside the stage: its description, the
 // thumbnails in the option grids and the embed snippet.
 
-import { DEFAULT_DUR, IDLE_CYCLE, PALETTE, SHOW_AT, cloneState, frame, type Anim, type BlobState, type RenderModel } from '../engine';
+import { DEFAULT_DUR, DEFAULT_STATE, IDLE_CYCLE, PALETTE, SHOW_AT, cloneState, frame, type Anim, type BlobState, type RenderModel } from '../engine';
 import { toSvgString } from '../render/svg';
 import type { Strings } from '../i18n/strings';
 
@@ -36,6 +36,9 @@ const look = (s: BlobState, patch: Partial<BlobState>): BlobState => ({ ...clone
 /** the avatar with one thing changed, at rest */
 export const shapeThumb = (s: BlobState, shape: BlobState['shape']) => svgOf(still(look(s, { shape })));
 export const exprThumb = (s: BlobState, expression: BlobState['expression']) => svgOf(still(look(s, { expression })));
+
+/** a ready-made look on its own, at rest */
+export const lookThumb = (patch: Pick<BlobState, 'shape' | 'color' | 'expression'>) => svgOf(still(look(DEFAULT_STATE, patch)));
 
 /** what a frame covers: the body, and the dots and lines that show */
 function cover(m: RenderModel, b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity }) {

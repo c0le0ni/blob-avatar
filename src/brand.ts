@@ -7,6 +7,7 @@
 import { DEFAULT_STATE, frame, cloneState, type BlobState } from './engine';
 import { bounds, make, polygonArea, resample, toPath, type Contour, type Pt } from './engine/contour';
 import { blink } from './engine/motion';
+import { PRESETS } from './presets';
 import { layersMarkup } from './render/svg';
 
 /** pixel size, in wordmark units */
@@ -141,16 +142,9 @@ export function markSvg(opt: { size?: number } = {}): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${size}" height="${size}"><path d="${toPath(m.body)}" fill="${LOGO_COLOR}"/>${eyes}</svg>`;
 }
 
-/** a row of still blobs made with the editor, for product cards (coleoni.com) and the README */
+/** a row of still blobs made with the editor (the first six ready-made ones), for product cards (coleoni.com) and the README */
 export function stripSvg(height = 64): string {
-  const looks: Partial<BlobState>[] = [
-    { shape: 'circle', color: '#aefa0e', expression: 'neutral' },
-    { shape: 'pebble', color: '#8b5cf6', expression: 'happy' },
-    { shape: 'squircle', color: '#3b82f6', expression: 'attentive' },
-    { shape: 'triangle', color: '#f5b400', expression: 'excited' },
-    { shape: 'cloud', color: '#ec4899', expression: 'laughing' },
-    { shape: 'droplet', color: '#14b8a6', expression: 'curious' },
-  ];
+  const looks: Partial<BlobState>[] = PRESETS.slice(0, 6);
   const cell = 130;
   const parts = looks.map((l, i) => `<g transform="translate(${i * cell + cell / 2} 65)">${layersMarkup(frame({ ...cloneState(DEFAULT_STATE), ...l }, 0, { still: true })).body}</g>`);
   const w = looks.length * cell;
