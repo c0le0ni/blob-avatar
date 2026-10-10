@@ -1,7 +1,7 @@
 // The app's small shared state outside the editor: the theme and the notices.
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { resolved, setTheme, watchSystem } from '../app/theme';
+import { resolved, setTheme, themePref, watchSystem, type ThemePref } from '../app/theme';
 
 // ---------------------------------------------------------------- theme
 
@@ -16,13 +16,16 @@ const themeStore = {
 };
 watchSystem(themeStore.emit);
 
+/** the theme on screen, the choice behind it (system, light or dark), and ways to change it */
 export function useTheme() {
   const theme = useSyncExternalStore(themeStore.subscribe, themeStore.get);
-  const toggle = useCallback(() => {
-    setTheme(resolved() === 'light' ? 'dark' : 'light');
+  const pref = useSyncExternalStore(themeStore.subscribe, themePref);
+  const setPref = useCallback((p: ThemePref) => {
+    setTheme(p);
     themeStore.emit();
   }, []);
-  return { theme, toggle };
+  const toggle = useCallback(() => setPref(resolved() === 'light' ? 'dark' : 'light'), [setPref]);
+  return { theme, toggle, pref, setPref };
 }
 
 // ---------------------------------------------------------------- notices

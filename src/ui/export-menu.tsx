@@ -1,5 +1,5 @@
 import { ChevronDown, CodeXml, Copy, Download, Film, Image, Link, LoaderCircle, Sparkles, Spline } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ComponentType, KeyboardEvent, ReactNode } from 'react';
 import { IDLE_CYCLE, type BlobState } from '../engine';
 import { toHash } from '../engine/codec';
@@ -9,6 +9,7 @@ import { cn } from '../lib/cn';
 import { ColorPicker } from './color-picker';
 import { toast } from './hooks';
 import type { Mode } from './player';
+import { SIZES, settings, type Settings } from './prefs';
 import { Button } from './primitives/button';
 import { Popover, PopoverContent, PopoverTrigger } from './primitives/popover';
 import { Segmented } from './primitives/segmented';
@@ -16,37 +17,8 @@ import { Switch } from './primitives/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
 import { embedCode } from './site';
 
-const KEY = 'coleoni-blob.export';
-const SIZES = ['256', '512', '1024'] as const;
-
-interface Saved {
-  size: string;
-  custom: string;
-  bg: boolean;
-  bgColor: string;
-  round: boolean;
-}
-
-const DEFAULTS: Saved = { size: '512', custom: '', bg: false, bgColor: '#ffffff', round: false };
-
-/** the export options are remembered on this device */
-function useSaved() {
-  const [saved, setSaved] = useState<Saved>(() => {
-    try {
-      return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem(KEY) || 'null') as Partial<Saved> | null) };
-    } catch {
-      return DEFAULTS;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(saved));
-    } catch {}
-  }, [saved]);
-  return [saved, (patch: Partial<Saved>) => setSaved((s) => ({ ...s, ...patch }))] as const;
-}
-
-function options(o: Saved): ExportOptions {
+/** the export options, from the settings (kept on this device) */
+export function exportOptions(o: Settings): ExportOptions {
   const custom = Math.round(Number(o.custom));
   const size = o.size === 'custom' && custom > 0 ? Math.max(16, Math.min(2048, custom)) : Number(o.size) || 512;
   return { size, bg: o.bg ? o.bgColor : null, round: o.round };
@@ -65,11 +37,13 @@ const SIDE = cn(
 const Separator = () => <div role="separator" className="mx-1.5 my-1 h-px shrink-0 bg-border" />;
 
 export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S: Strings }) {
-  const [saved, save] = useSaved();
+  // the export options are remembered on this device
+  const saved = settings.use();
+  const save = settings.set;
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
-  const o = options(saved);
+  const o = exportOptions(saved);
   // the animated formats take the cycle while animating, the idle loop otherwise
   const moving: BlobState = mode === 'animate' ? state : { ...state, cycle: IDLE_CYCLE };
 
