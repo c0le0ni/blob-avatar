@@ -10,9 +10,92 @@
 </head>
 <body>
 <!-- Dev-only: <blob-avatar> under a strict CSP. Build the embed first (npm run build). -->
-<blob-avatar></blob-avatar>
-<blob-avatar shape="ghost" color="#8a6cff" eyes="pixel" expression="happy" animation="float.3,spin.1.4" gaze size="120"></blob-avatar>
-<blob-avatar state="v=1&shape=star&color=ffd23f&eyes=dot&mode=hole&eyec=auto&expr=starry&anim=excited.1.6,idle.2&bg=linear.101820.2a1f4d.135&seed=7" size="96"></blob-avatar>
-<blob-avatar shape="block" color="#f3eee4" eyes="heart" expression="love" animation="love.2.4" paused></blob-avatar>
+
+<h2>No attributes: every animation once</h2>
+<div class="row">
+  <figure><blob-avatar></blob-avatar><figcaption>&lt;blob-avatar&gt;</figcaption></figure>
+  <figure><blob-avatar shape="circle" color="#aefa0e" expression="happy" animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar><figcaption>the snippet in the README</figcaption></figure>
+</div>
+
+<h2>Shapes</h2>
+<div class="row">
+  <figure><blob-avatar shape="circle" color="#aefa0e" animation="idle.2.4" size="96"></blob-avatar><figcaption>circle</figcaption></figure>
+  <figure><blob-avatar shape="pebble" color="#e8483f" animation="idle.2.4" size="96"></blob-avatar><figcaption>pebble</figcaption></figure>
+  <figure><blob-avatar shape="squircle" color="#f08a24" animation="idle.2.4" size="96"></blob-avatar><figcaption>squircle</figcaption></figure>
+  <figure><blob-avatar shape="capsule" color="#f0b429" animation="idle.2.4" size="96"></blob-avatar><figcaption>capsule</figcaption></figure>
+  <figure><blob-avatar shape="triangle" color="#2fbfa0" animation="idle.2.4" size="96"></blob-avatar><figcaption>triangle</figcaption></figure>
+  <figure><blob-avatar shape="hexagon" color="#3b93f0" animation="idle.2.4" size="96"></blob-avatar><figcaption>hexagon</figcaption></figure>
+  <figure><blob-avatar shape="cloud" color="#8b5cf6" animation="idle.2.4" size="96"></blob-avatar><figcaption>cloud</figcaption></figure>
+  <figure><blob-avatar shape="droplet" color="#e152b0" animation="idle.2.4" size="96"></blob-avatar><figcaption>droplet</figcaption></figure>
+</div>
+
+<h2>Expressions</h2>
+<div class="row">
+  <figure><blob-avatar expression="neutral" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>neutral</figcaption></figure>
+  <figure><blob-avatar expression="attentive" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>attentive</figcaption></figure>
+  <figure><blob-avatar expression="surprised" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>surprised</figcaption></figure>
+  <figure><blob-avatar expression="excited" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>excited</figcaption></figure>
+  <figure><blob-avatar expression="happy" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>happy</figcaption></figure>
+  <figure><blob-avatar expression="laughing" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>laughing</figcaption></figure>
+  <figure><blob-avatar expression="angry" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>angry</figcaption></figure>
+  <figure><blob-avatar expression="sad" color="#f1efe9" animation="idle.4.8" size="96"></blob-avatar><figcaption>sad</figcaption></figure>
+  <figure><blob-avatar expression="scared" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>scared</figcaption></figure>
+  <figure><blob-avatar expression="suspicious" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>suspicious</figcaption></figure>
+  <figure><blob-avatar expression="confused" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>confused</figcaption></figure>
+  <figure><blob-avatar expression="curious" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>curious</figcaption></figure>
+  <figure><blob-avatar expression="proud" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>proud</figcaption></figure>
+  <figure><blob-avatar expression="shy" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>shy</figcaption></figure>
+  <figure><blob-avatar expression="unimpressed" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>unimpressed</figcaption></figure>
+  <figure><blob-avatar expression="sleepy" color="#a3a3a3" animation="idle.4.8" size="96"></blob-avatar><figcaption>sleepy</figcaption></figure>
+</div>
+
+<h2>Animations, with lengths</h2>
+<div class="row">
+  <figure><blob-avatar animation="thinking.2.6" color="#3b93f0" size="96"></blob-avatar><figcaption>thinking.2.6</figcaption></figure>
+  <figure><blob-avatar animation="wink.1.6,idle.1" color="#3b93f0" size="96"></blob-avatar><figcaption>wink.1.6,idle.1</figcaption></figure>
+  <figure><blob-avatar animation="wide.1.8,idle.1" color="#3b93f0" size="96"></blob-avatar><figcaption>wide.1.8,idle.1</figcaption></figure>
+  <figure><blob-avatar animation="alert.2.4" color="#3b93f0" size="96"></blob-avatar><figcaption>alert.2.4</figcaption></figure>
+  <figure><blob-avatar animation="notification.2.2" color="#3b93f0" size="96"></blob-avatar><figcaption>notification.2.2</figcaption></figure>
+  <figure><blob-avatar animation="exclaim.2" color="#3b93f0" size="96"></blob-avatar><figcaption>exclaim.2</figcaption></figure>
+  <figure><blob-avatar animation="sleep.6" color="#3b93f0" size="96"></blob-avatar><figcaption>sleep.6</figcaption></figure>
+  <figure><blob-avatar animation="egg.1.8,idle.1" color="#3b93f0" size="96"></blob-avatar><figcaption>egg.1.8,idle.1</figcaption></figure>
+  <figure><blob-avatar animation="hexagon.1.6,idle.1" color="#3b93f0" size="96"></blob-avatar><figcaption>hexagon.1.6,idle.1</figcaption></figure>
+  <figure><blob-avatar animation="play.2,idle.1" color="#3b93f0" size="96"></blob-avatar><figcaption>play.2,idle.1</figcaption></figure>
+  <figure><blob-avatar animation="orbit.3.4" color="#3b93f0" size="96"></blob-avatar><figcaption>orbit.3.4</figcaption></figure>
+  <figure><blob-avatar animation="burst.2.6" color="#3b93f0" size="96"></blob-avatar><figcaption>burst.2.6</figcaption></figure>
+  <figure><blob-avatar animation="comet" color="#3b93f0" size="96"></blob-avatar><figcaption>comet (default length)</figcaption></figure>
+  <figure><blob-avatar animation="wink.0.4,thinking.5,burst.1.2,idle.0.8" shape="cloud" color="#f0b429" expression="curious" size="96"></blob-avatar><figcaption>a cycle of four</figcaption></figure>
+  <figure><blob-avatar animation="wink.0.1,orbit.30" color="#e8483f" size="96"></blob-avatar><figcaption>wink.0.1,orbit.30 (clamped to 0.4 and 10)</figcaption></figure>
+</div>
+
+<h2>Gaze (move the pointer)</h2>
+<div class="row">
+  <figure><blob-avatar gaze color="#aefa0e" expression="curious" animation="idle.4.8" size="120"></blob-avatar><figcaption>gaze</figcaption></figure>
+  <figure><blob-avatar gaze shape="squircle" color="#e152b0" expression="suspicious" animation="idle.2.4,wink.1.6" size="120"></blob-avatar><figcaption>gaze, with a cycle</figcaption></figure>
+  <figure><blob-avatar gaze paused shape="triangle" color="#2fbfa0" size="120"></blob-avatar><figcaption>gaze and paused (holds still)</figcaption></figure>
+  <figure><blob-avatar shape="pebble" color="#8b5e3c" expression="attentive" animation="idle.4.8" size="120"></blob-avatar><figcaption>no gaze: looks around on its own</figcaption></figure>
+</div>
+
+<h2>Sizes and colors</h2>
+<div class="row">
+  <figure><blob-avatar color="#0a0a0c" expression="happy" animation="idle.2.4" size="32"></blob-avatar><figcaption>size="32", ink</figcaption></figure>
+  <figure><blob-avatar color="#ff6a5c" expression="happy" animation="idle.2.4" size="64"></blob-avatar><figcaption>size="64"</figcaption></figure>
+  <figure><blob-avatar color="5ad1ff" expression="happy" animation="idle.2.4" size="160"></blob-avatar><figcaption>color without #</figcaption></figure>
+  <figure><blob-avatar color="#F1EFE9" expression="happy" animation="idle.2.4" size="240"></blob-avatar><figcaption>size="240", uppercase hex</figcaption></figure>
+  <figure><blob-avatar class="css-size" color="#8b5cf6" expression="proud" animation="idle.2.4"></blob-avatar><figcaption>sized with CSS</figcaption></figure>
+</div>
+
+<h2>State, aliases and bad input</h2>
+<div class="row">
+  <figure><blob-avatar state="v=2&amp;shape=cloud&amp;color=3b93f0&amp;expr=curious&amp;anim=orbit.3.4,idle.2&amp;seed=z9" size="96"></blob-avatar><figcaption>state (a v2 link hash)</figcaption></figure>
+  <figure><blob-avatar state="v=2&amp;shape=cloud&amp;color=3b93f0&amp;expr=curious&amp;anim=orbit.3.4,idle.2&amp;seed=z9" shape="hexagon" color="#f08a24" size="96"></blob-avatar><figcaption>state, then shape and color on top</figcaption></figure>
+  <figure><blob-avatar shape="capsule" expr="laughing" anim="notification.2.2,idle.1.2" color="#aefa0e" size="96"></blob-avatar><figcaption>expr and anim (the link keys)</figcaption></figure>
+  <figure><blob-avatar shape="bean" color="#ff6a5c" expression="happy" animation="idle.3,hop.1.6,sleep.4" size="96"></blob-avatar><figcaption>v1: bean is a pebble, hop is skipped</figcaption></figure>
+  <figure><blob-avatar state="v=1&amp;shape=puff&amp;color=ffd23f&amp;eyes=dot&amp;mode=hole&amp;expr=starry&amp;anim=excited.1.6,idle.2&amp;bg=linear.101820.2a1f4d.135&amp;seed=7" size="96"></blob-avatar><figcaption>a v1 link: puff is a cloud, what v2 lacks is dropped</figcaption></figure>
+  <figure><blob-avatar shape="ghost" color="red" expression="love" animation="spin.1.4" seed="!!" size="96"></blob-avatar><figcaption>nothing valid: the default</figcaption></figure>
+  <figure><blob-avatar animation="idle.2.4,wink.1.6" seed="1" size="96"></blob-avatar><figcaption>seed="1"</figcaption></figure>
+  <figure><blob-avatar animation="idle.2.4,wink.1.6" seed="zzzzzz" size="96"></blob-avatar><figcaption>seed="zzzzzz": other blinks and glances</figcaption></figure>
+  <figure><blob-avatar animation="orbit.3.4" paused size="96"></blob-avatar><figcaption>paused</figcaption></figure>
+</div>
 </body>
 </html>

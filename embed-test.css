@@ -1,1 +1,6 @@
-body { background: #0a0a0a; display: flex; gap: 24px; align-items: center; padding: 40px; margin: 0; }
+body { background: #0a0a0a; color: #e8e8ea; font: 13px/1.4 system-ui, sans-serif; padding: 24px 40px 40px; margin: 0; }
+h2 { font-size: 13px; font-weight: 600; color: #8b8d94; letter-spacing: .06em; text-transform: uppercase; margin: 28px 0 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+figure { margin: 0; display: grid; gap: 6px; justify-items: center; padding: 12px; background: #141416; border-radius: 12px; }
+figcaption { font: 11px ui-monospace, monospace; color: #8b8d94; max-width: 160px; text-align: center; }
+.css-size { width: 120px; height: 120px; }
