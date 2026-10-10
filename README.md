@@ -22,8 +22,9 @@
 
 ## What you can make
 
-- **8 shapes:** circle, pebble, squircle, capsule, triangle, hexagon, cloud, droplet.
-- **16 expressions**, from neutral and happy to suspicious, unimpressed and sleepy.
+- **12 shapes** in three rows: round (circle, pebble, squircle, capsule), geometric
+  (triangle, diamond, hexagon, star) and organic (cloud, droplet, heart, ghost).
+- **20 expressions**, from neutral and happy to worried, smug and sleepy.
 - **Any color:** twelve swatches, or any other with the picker (a hex field, and an
   eyedropper where the browser has one).
 - **14 animations** in a cycle of up to 24 clips: drag to reorder, drag an edge to
@@ -58,9 +59,9 @@ version.
 
 | Attribute | Values | Default |
 | --- | --- | --- |
-| `shape` | `circle` `pebble` `squircle` `capsule` `triangle` `hexagon` `cloud` `droplet` | `circle` |
+| `shape` | `circle` `pebble` `squircle` `capsule` `triangle` `diamond` `hexagon` `star` `cloud` `droplet` `heart` `ghost` | `circle` |
 | `color` | a six-digit hex color, with or without `#` | `#aefa0e` |
-| `expression` (or `expr`) | `neutral` `attentive` `surprised` `excited` `happy` `laughing` `angry` `sad` `scared` `suspicious` `confused` `curious` `proud` `shy` `unimpressed` `sleepy` | `neutral` |
+| `expression` (or `expr`) | `neutral` `attentive` `focused` `surprised` `excited` `happy` `laughing` `wink` `angry` `sad` `worried` `scared` `suspicious` `confused` `curious` `proud` `smug` `shy` `unimpressed` `sleepy` | `neutral` |
 | `animation` (or `anim`) | the cycle: up to 24 `name.seconds` items, comma separated, played in order. Names: `idle` `thinking` `wink` `wide` `alert` `notification` `exclaim` `sleep` `egg` `hexagon` `play` `orbit` `burst` `comet`. Seconds go from 0.4 to 10, one decimal; leave them out (`wink`) for the animation's own length | every animation once, in this order |
 | `seed` | 1 to 6 characters of `0-9a-z`; changes when it blinks and where it glances | `1` |
 | `size` | pixels, up to 4096 (or size the element with CSS) | `160` |
@@ -79,9 +80,11 @@ who prefer reduced motion. It has `role="img"` and the label "Blob avatar"; set
 
 **Snippets and links from the first version** still open. The old shape names
 (`orb` `bean` `block` `pill` `tri` `hex` `puff` `drop`) map to the new shapes, and
-the expressions and animations that still exist keep working. Everything else
-(`eyes`, `mode`, `eyec`, `bg`, the `ghost` and `star` shapes, the moves that are
-gone) is ignored, so check old snippets against the table above.
+`ghost` and `star` are shapes again. The four expressions that are gone open as the
+nearest ones (`joy` as laughing, `love` as happy, `starry` as excited, `dizzy` as
+confused), and the other expressions and the animations that still exist keep
+working. Everything else (`eyes`, `mode`, `eyec`, `bg`, the moves that are gone) is
+ignored, so check old snippets against the table above.
 
 ## How it works
 
