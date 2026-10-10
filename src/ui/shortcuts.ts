@@ -27,10 +27,10 @@ export function actionFor(e: KeyLike): Action | null {
   return e.key === '?' ? 'help' : null;
 }
 
-/** the focus is where keys mean something else: a field being typed in, or an open popover */
+/** the focus is where keys mean something else: a field being typed in, or an open popover (the timeline's track is not one) */
 function busy(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
-  return !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-radix-popper-content-wrapper], [role="dialog"], [role="menu"], [role="listbox"]');
+  return !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-radix-popper-content-wrapper], [role="dialog"], [role="menu"], [role="listbox"]:not([data-track])');
 }
 
 /** Space belongs to the focused control, so it only plays from the page itself or the stage */

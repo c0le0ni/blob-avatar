@@ -116,6 +116,8 @@ export function cyclesOf(editor: Editor, book: Book) {
     select: editor.selectCycle,
     rename: editor.renameCycle,
     copy: editor.copyCycle,
+    /** an undo of the step just taken, for a toast's button */
+    undoLast: editor.undoLast,
     /** delete a cycle of the person's (the one on screen by default); returns its undo */
     remove: (id?: string) => {
       editor.removeCycle(id);

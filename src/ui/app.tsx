@@ -1,14 +1,17 @@
 import { Clapperboard, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { loopLength, type Anim } from '../engine';
+import { MAX_CLIPS, loopLength, type Anim } from '../engine';
 import { randomLook } from '../engine/codec';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
-import { addClip } from './cycles';
-import { cyclesOf, useEditor } from './editor';
+import { announce } from './animate/announce';
+import { savedName } from './animate/cycle-menu';
+import { Timeline } from './animate/timeline';
+import { insertClip, starts } from './cycles';
+import { cyclesOf, useEditor, type Cycles } from './editor';
 import { ExportMenu, exportOptions } from './export-menu';
-import { holdNotice, dismiss, useNotice } from './hooks';
+import { holdNotice, dismiss, toast, useNotice } from './hooks';
 import { runIntro } from './intro';
 import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
@@ -19,7 +22,6 @@ import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
 import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
-import { Timeline } from './timeline';
 import { GithubLink, LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
 /** the stage; with a backdrop, it shows the export's background and round crop around the blob */
@@ -104,10 +106,30 @@ export function App({ S }: { S: Strings }) {
   const { editor, doc, canUndo, canRedo } = useEditor();
   const state = doc.blob;
   const edit = editor.edit;
-  const cycles = cyclesOf(editor, doc.book);
   const prefs = settings.use();
   const [mode, setMode] = useState<Mode>('customize');
   const [player] = useState(() => new Player(state, prefs.still));
+  // the clip picked on the track, and whether it plays over and over
+  const [selected, setSelected] = useState<number | null>(null);
+  const [looping, setLooping] = useState(false);
+  const sel = selected !== null && selected < state.cycle.length ? selected : null;
+  const loopOn = looping && sel !== null;
+  const base = cyclesOf(editor, doc.book);
+  const cycles: Cycles = {
+    ...base,
+    // changing a template keeps it, and makes a cycle of the person's: the page says which
+    change: (f, key) => {
+      const fresh = base.change(f, key);
+      if (fresh) toast(S.savedAs(savedName(fresh, S)));
+      return fresh;
+    },
+    // another cycle starts with nothing picked
+    select: (id) => {
+      setSelected(null);
+      setLooping(false);
+      base.select(id);
+    },
+  };
   const pendingSeek = useRef<number | null>(null);
   const wordmark = useRef<HTMLElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -136,10 +158,55 @@ export function App({ S }: { S: Strings }) {
     return runIntro({ player, stage, o, chrome: parts, onDone: () => {} });
   }, [player]);
 
+  // a looped clip plays over and over; the range follows the clip as it moves or stretches
+  useEffect(() => {
+    if (mode !== 'animate' || !loopOn || sel === null) return player.setRange(null);
+    const { at } = starts(state.cycle);
+    player.setRange([at[sel], at[sel] + state.cycle[sel].dur]);
+  }, [player, mode, loopOn, sel, state.cycle]);
+
+  /** an animation from the library: after the selected clip, or at the end; it is selected and shown */
   const add = (anim: Anim) => {
-    pendingSeek.current = loopLength(state);
-    cycles.change((cs) => addClip(cs, anim));
+    const clips = state.cycle;
+    if (clips.length >= MAX_CLIPS) return toast(S.full);
+    const at = sel === null ? clips.length : sel + 1;
+    pendingSeek.current = starts(clips).at[at] ?? loopLength(state);
+    const fresh = base.change((cs) => insertClip(cs, at, anim));
+    const said = S.said.added(S.anims[anim], at + 1, clips.length + 1);
+    setSelected(at);
+    announce(said);
+    // the track may be out of sight (below the fold on a phone): the notice says it, with an undo
+    const track = document.querySelector('[data-track]')?.getBoundingClientRect();
+    const hidden = !track || track.bottom < 0 || track.top > innerHeight;
+    if (fresh) toast(`${hidden ? said + '. ' : ''}${S.savedAs(savedName(fresh, S))}`);
+    else if (hidden) toast(said, { label: S.undo, run: editor.undoLast() });
   };
+
+  const loop = (on: boolean) => {
+    setLooping(on);
+    // looping is a request to see it move
+    if (on) player.setPlaying(true);
+  };
+
+  // Escape stops an audition first, then lets go of the selected clip
+  const escape = useRef(() => {});
+  escape.current = () => {
+    if (player.auditioning) return player.audition(null), true;
+    if (mode !== 'animate' || sel === null) return false;
+    const inBar = !!document.activeElement?.closest('[data-inspector]');
+    setSelected(null);
+    setLooping(false);
+    // the bar empties: the focus goes back to the track rather than to nowhere
+    if (inBar) requestAnimationFrame(() => document.getElementById(`clip-${sel}`)?.focus());
+    return true;
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented && escape.current()) e.preventDefault();
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, []);
 
   /** a new look from the swatches; the cycle stays */
   const randomize = () =>
@@ -206,7 +273,9 @@ export function App({ S }: { S: Strings }) {
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
             {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
-              <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
+              <div className="relative flex justify-center">
+                <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
+              </div>
               <StageToolbar
               S={S}
               canUndo={canUndo}
@@ -221,10 +290,19 @@ export function App({ S }: { S: Strings }) {
               className="max-md:-mt-2 md:absolute md:top-2 md:right-0 md:z-10"
               />
             </div>
-            {mode === 'animate' ? <Timeline state={state} cycles={cycles} player={player} S={S} className="w-full max-w-5xl animate-rise-in md:mb-1" /> : null}
+            {mode === 'animate' ? (
+              <Timeline state={state} cycles={cycles} player={player} S={S} selected={sel} onSelect={setSelected} looping={loopOn} onLoop={loop} className="w-full animate-rise-in md:mb-1" />
+            ) : null}
           </div>
           <div data-intro="translateX(16px)" className="md:w-[22rem] md:shrink-0 md:pt-2">
-            <OptionsCard state={state} edit={edit} mode={mode} onAdd={add} S={S} className="md:max-h-full md:overflow-y-auto" />
+            <OptionsCard
+              state={state}
+              edit={edit}
+              mode={mode}
+              S={S}
+              className="md:max-h-full md:overflow-y-auto"
+              onAdd={add}
+            />
           </div>
         </main>
         <footer data-intro="translateY(6px)" className="flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-2xs text-foreground-subtle">
