@@ -7,17 +7,16 @@
 // Attributes are the keys of the share link (shape, color, expression, animation,
 // seed), or `state` with a whole link hash. `gaze`
 // makes it follow the cursor, `paused` holds it still. Works under a strict CSP:
-// no inline styles, no eval. One animation loop drives every avatar on the page,
-// and only the ones on screen are drawn.
+// no inline styles, no eval. One animation loop drives every avatar on the page
+// (driver.ts), and only the ones on screen are drawn.
 
-import { DEFAULT_STATE, frame, loopLength, type BlobState } from '../engine';
+import { DEFAULT_STATE } from '../engine';
 import { fromHash, fromParams } from '../engine/codec';
-import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
 import { LiveSvg } from '../render/svg';
+import { drive, type Driver } from './driver';
 
 const ATTRS = ['shape', 'color', 'expression', 'expr', 'animation', 'anim', 'seed', 'size', 'gaze', 'paused', 'state'];
 const CSS = ':host{display:inline-block;width:160px;height:160px;line-height:0;vertical-align:middle}:host([hidden]){display:none}svg{width:100%;height:100%;overflow:visible}';
-const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let sheet: CSSStyleSheet | null = null;
 function styles(root: ShadowRoot) {
@@ -35,122 +34,39 @@ function styles(root: ShadowRoot) {
   }
 }
 
-// ---------------------------------------------------------------- the shared loop
-
-const live = new Set<BlobAvatarElement>();
-let running = false;
-let last = 0;
-let pointer: [number, number] | null = null;
-let pointerNear = false;
-
-function loop(now: number) {
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
-  let any = false;
-  for (const el of live) any = el.step(dt) || any;
-  if (any) requestAnimationFrame(loop);
-  else running = false;
-}
-
-function wake() {
-  if (running || typeof requestAnimationFrame !== 'function') return;
-  running = true;
-  last = performance.now();
-  requestAnimationFrame(loop);
-}
-
-const seen = typeof IntersectionObserver === 'function'
-  ? new IntersectionObserver((entries) => {
-      for (const e of entries) (e.target as BlobAvatarElement).onScreen = e.isIntersecting;
-      wake();
-    })
-  : null;
-
-let listening = false;
-function listen() {
-  if (listening) return;
-  listening = true;
-  addEventListener('pointermove', (e: PointerEvent) => {
-    pointer = [e.clientX, e.clientY];
-    pointerNear = true;
-    wake();
-  }, { passive: true });
-  document.addEventListener('pointerleave', () => {
-    pointer = null;
-    pointerNear = false;
-  });
-}
-
-if (typeof document !== 'undefined') document.addEventListener('visibilitychange', wake);
-
-// ---------------------------------------------------------------- the element
-
 export class BlobAvatarElement extends HTMLElement {
   static observedAttributes = ATTRS;
-  onScreen = !seen;
-  private svg: LiveSvg;
-  private state: BlobState = DEFAULT_STATE;
-  private t = 0;
-  private gaze: Gaze = [0, 0, 0, 0];
+  private declare driver: Driver;
 
   constructor() {
     super();
     const root = this.attachShadow({ mode: 'open' });
     styles(root);
-    this.svg = new LiveSvg(document);
-    root.appendChild(this.svg.el);
+    const svg = new LiveSvg(document);
+    root.appendChild(svg.el);
+    this.driver = drive(this, svg);
   }
 
   connectedCallback() {
     if (!this.hasAttribute('role')) this.setAttribute('role', 'img');
     if (!this.hasAttribute('aria-label') && !this.hasAttribute('aria-labelledby')) this.setAttribute('aria-label', 'Blob avatar');
     this.read();
-    this.draw();
-    live.add(this);
-    seen?.observe(this);
-    if (this.hasAttribute('gaze')) listen();
-    wake();
+    this.driver.start();
   }
 
   disconnectedCallback() {
-    live.delete(this);
-    seen?.unobserve(this);
+    this.driver.stop();
   }
 
   attributeChangedCallback() {
-    if (!this.isConnected) return;
-    this.read();
-    if (this.hasAttribute('gaze')) listen();
-    this.draw();
-    wake();
+    if (this.isConnected) this.read();
   }
 
   private read() {
     const base = this.getAttribute('state') ? fromHash(this.getAttribute('state')!) : DEFAULT_STATE;
-    this.state = fromParams((k) => this.getAttribute(k), base);
     const size = Number(this.getAttribute('size'));
     if (size > 0 && size <= 4096) this.style.width = this.style.height = `${size}px`;
-  }
-
-  private still() {
-    return this.hasAttribute('paused') || reduced();
-  }
-
-  private draw() {
-    const still = this.still();
-    const follow = pointerNear && this.hasAttribute('gaze');
-    this.svg.update(frame(this.state, this.t, still ? { still: true } : follow ? { gaze: [this.gaze[0], this.gaze[1]] } : {}));
-  }
-
-  /** advance one frame; returns whether it wants more frames */
-  step(dt: number): boolean {
-    if (this.still() || !this.onScreen || document.hidden) return false;
-    const L = loopLength(this.state) || 2.4;
-    this.t = (this.t + dt) % L;
-    // the eyes ease toward the cursor on a spring
-    if (pointer && this.hasAttribute('gaze')) this.gaze = springGaze(this.gaze, gazeTarget(pointer[0], pointer[1], this.getBoundingClientRect(), innerWidth * 0.4, innerHeight * 0.4), dt);
-    this.draw();
-    return true;
+    this.driver.set({ state: fromParams((k) => this.getAttribute(k), base), gaze: this.hasAttribute('gaze'), paused: this.hasAttribute('paused') });
   }
 }
 
