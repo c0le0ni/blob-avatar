@@ -44,7 +44,7 @@ function Stage({ player, label, small, backdrop }: { player: Player; label: stri
       role="img"
       aria-label={label}
       className={cn(
-        'aspect-square shrink-0 transition-[width,border-radius,background-color] duration-(--motion-slow) ease-out-expo [&>svg]:block [&>svg]:size-full',
+        'aspect-square shrink-0 scroll-mt-16 transition-[width,border-radius,background-color] duration-(--motion-slow) ease-out-expo [&>svg]:block [&>svg]:size-full',
         small ? 'w-[min(64vw,15rem,34vh)] md:w-[min(40vh,24rem)]' : 'w-[min(72vw,17rem,40vh)] md:w-[min(52vh,28rem)]',
         // the export cuts at the edge of the picture: so does the stage, then
         backdrop && ['overflow-hidden', backdrop.round ? 'rounded-full' : 'rounded-xs', !backdrop.bg && 'checker'],
@@ -187,7 +187,12 @@ export function App({ S }: { S: Strings }) {
 
   const audition = (anim: Anim | null) => {
     player.audition(anim ? { anim, dur: DEFAULT_DUR[anim] } : null);
-    if (anim) announce(S.previewing(S.anims[anim]));
+    if (!anim) return;
+    announce(S.previewing(S.anims[anim]));
+    // on a phone the library sits below the fold: the stage comes into view to show it
+    const stage = document.getElementById('stage');
+    const r = stage?.getBoundingClientRect();
+    if (stage && r && (r.top < 0 || r.bottom > innerHeight)) stage.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
   const loop = (on: boolean) => {
@@ -284,7 +289,8 @@ export function App({ S }: { S: Strings }) {
               <div className="relative flex justify-center">
                 <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
                 {mode === 'animate' && auditioning ? (
-                  <div className="pointer-events-none absolute inset-x-0 -bottom-1 z-20 flex justify-center">
+                  // over the top of the stage on a phone (its tools sit right under it), under the blob from md up
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center md:top-auto md:-bottom-1">
                     <AuditionPill anim={auditioning.anim} full={state.cycle.length >= MAX_CLIPS} S={S} onAdd={() => (add(auditioning.anim), audition(null))} onStop={() => audition(null)} />
                   </div>
                 ) : null}
