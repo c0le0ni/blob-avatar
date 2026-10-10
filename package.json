@@ -1,9 +1,9 @@
 {
   "name": "blob-avatar",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Build your own animated blob avatar. A free product by Coleoni.",
+  "description": "Make your own animated blob avatar. Export PNG, GIF or SVG, or embed it with one tag. Free, by Coleoni.",
   "license": "MIT",
   "scripts": {
     "dev": "vite --port 5320 --strictPort",
