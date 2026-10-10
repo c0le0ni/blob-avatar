@@ -1,6 +1,6 @@
 // <blob-avatar>: the avatar on any page, from one script tag.
 //
-//   <script src="https://blob.coleoni.com/embed.js" defer></script>
+//   <script src="https://blob.coleoni.com/v2/embed.js" defer></script>
 //   <blob-avatar shape="circle" color="#aefa0e" expression="happy"
 //                animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar>
 //

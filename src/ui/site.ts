@@ -70,5 +70,5 @@ export function animThumb(s: BlobState, anim: Anim): { svg: string; view: string
 /** the snippet behind "Copy embed code" */
 export function embedCode(s: BlobState): string {
   const anim = s.cycle.map((c) => `${c.anim}.${c.dur}`).join(',');
-  return `<script src="${SITE}/embed.js" defer></script>\n<blob-avatar shape="${s.shape}" color="${s.color}" expression="${s.expression}" animation="${anim}" seed="${s.seed.toString(36)}" size="160"></blob-avatar>`;
+  return `<script src="${SITE}/v2/embed.js" defer></script>\n<blob-avatar shape="${s.shape}" color="${s.color}" expression="${s.expression}" animation="${anim}" seed="${s.seed.toString(36)}" size="160"></blob-avatar>`;
 }

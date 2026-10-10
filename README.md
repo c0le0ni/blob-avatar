@@ -43,7 +43,7 @@ Customize mode they play the idle loop.
 ## On your site
 
 ```html
-<script src="https://blob.coleoni.com/embed.js" defer></script>
+<script src="https://blob.coleoni.com/v2/embed.js" defer></script>
 
 <blob-avatar shape="circle" color="#aefa0e" expression="happy"
              animation="idle.2.4,wink.1.6" size="160" gaze></blob-avatar>
@@ -51,6 +51,10 @@ Customize mode they play the idle loop.
 
 "Copy embed code", in the export menu, writes this tag for the blob you made, seed
 included. Add `gaze` if you want it to follow the cursor.
+
+The script's address carries its major version: `/v2/` stays on v2, so a new major
+never changes a blob already on your page. `/embed.js` always serves the latest
+version.
 
 | Attribute | Values | Default |
 | --- | --- | --- |
@@ -111,7 +115,7 @@ npm install
 npm run dev      # http://localhost:5320
 npm test
 npm run check    # types
-npm run build    # the site and embed.js, into dist/
+npm run build    # the site and embed.js (also at v2/embed.js), into dist/
 ```
 
 `lab.html` shows every shape, expression, color and animation at once
