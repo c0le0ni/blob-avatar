@@ -12,7 +12,7 @@ import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
-import { describe, REPO, SKILLS, LOADERS, COLEONI } from './site';
+import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
 import { Timeline } from './timeline';
 import { LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
@@ -149,7 +149,7 @@ export function App({ S }: { S: Strings }) {
         <footer data-intro="translateY(6px)" className="flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-2xs text-foreground-subtle">
           <span>
             {S.madeBy}{' '}
-            <a href={COLEONI} rel="noopener" className="font-medium text-foreground-muted transition-colors hover:text-foreground">
+            <a href={coleoniHome(S)} rel="noopener" className="font-medium text-foreground-muted transition-colors hover:text-foreground">
               Coleoni
             </a>
           </span>

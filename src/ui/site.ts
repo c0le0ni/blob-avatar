@@ -11,6 +11,9 @@ export const SKILLS = 'https://skills.coleoni.com';
 export const LOADERS = 'https://loaders.coleoni.com';
 export const COLEONI = 'https://coleoni.com';
 
+/** coleoni.com in the page's language */
+export const coleoniHome = (S: Pick<Strings, 'lang'>) => (S.lang === 'pt' ? `${COLEONI}/pt` : COLEONI);
+
 export function describe(s: BlobState, S: Strings): string {
   const pal = PALETTE.find((p) => p.hex === s.color);
   return S.describe(S.shapes[s.shape], pal ? S.palette[pal.id] : S.customColor, S.expressions[s.expression]);

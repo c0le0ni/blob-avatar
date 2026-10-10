@@ -7,7 +7,7 @@ import { useTheme } from './hooks';
 import { Button } from './primitives/button';
 import { Popover, PopoverContent, PopoverTrigger } from './primitives/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from './primitives/tooltip';
-import { COLEONI } from './site';
+import { coleoniHome } from './site';
 
 export function ThemeToggle({ S }: { S: Strings }) {
   const { theme, toggle } = useTheme();
@@ -93,7 +93,7 @@ export function TopBar({ S, center, end, onWordmark, className }: TopBarProps) {
   return (
     <header className={cn('relative z-30 flex h-14 shrink-0 items-center gap-3 px-3 sm:px-5', className)}>
       <div className="flex min-w-0 items-center gap-3">
-        <a href={COLEONI} rel="noopener" aria-label={S.coleoni} data-intro="translateX(-6px)" className="flex shrink-0 rounded-sm text-foreground transition-opacity hover:opacity-80">
+        <a href={coleoniHome(S)} rel="noopener" aria-label={S.coleoni} data-intro="translateX(-6px)" className="flex shrink-0 rounded-sm text-foreground transition-opacity hover:opacity-80">
           <ColeoniLockup className="max-sm:hidden" />
           <ColeoniSymbol className="sm:hidden" />
         </a>
