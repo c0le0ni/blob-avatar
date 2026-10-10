@@ -102,7 +102,8 @@ export function BlobAvatar({ shape, color, expression, animation, seed, size = 1
     // s and re are what key and reKey say
   }, [key, gaze, paused, reKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const px = typeof size === 'number' ? `${size}px` : size;
+  // a number, or digits as in the embed code, is pixels
+  const px = typeof size === 'number' || /^\d+(\.\d+)?$/.test(size) ? `${size}px` : size;
   const box: CSSProperties = { display: 'inline-block', width: px, height: px, lineHeight: 0, verticalAlign: 'middle' };
   if (re) Object.assign(box, { cursor: 'pointer', WebkitTapHighlightColor: 'transparent', userSelect: 'none' });
 

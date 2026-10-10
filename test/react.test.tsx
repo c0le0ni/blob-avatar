@@ -37,6 +37,7 @@ describe('the React component', () => {
     expect(html).toContain('tabindex="0"');
     expect(html).toContain('data-x="1"');
     expect(renderToString(<BlobAvatar size={48} />)).toContain('width:48px;height:48px');
+    expect(renderToString(<BlobAvatar size="96" />)).toContain('width:96px;height:96px');
     expect(renderToString(<BlobAvatar aria-labelledby="who" />)).not.toContain('aria-label=');
   });
 
