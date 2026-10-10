@@ -6,11 +6,12 @@ import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
 import { addClip } from './cycles';
 import { cyclesOf, useEditor } from './editor';
-import { ExportMenu } from './export-menu';
+import { ExportMenu, exportOptions } from './export-menu';
 import { holdNotice, dismiss, useNotice } from './hooks';
 import { runIntro } from './intro';
 import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
+import { settings } from './prefs';
 import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
@@ -18,7 +19,8 @@ import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
 import { Timeline } from './timeline';
 import { GithubLink, LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
-function Stage({ player, label, small }: { player: Player; label: string; small: boolean }) {
+/** the stage; with a backdrop, it shows the export's background and round crop around the blob */
+function Stage({ player, label, small, backdrop }: { player: Player; label: string; small: boolean; backdrop: { bg: string | null; round: boolean } | null }) {
   const host = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = host.current!;
@@ -36,9 +38,12 @@ function Stage({ player, label, small }: { player: Player; label: string; small:
       role="img"
       aria-label={label}
       className={cn(
-        'aspect-square shrink-0 transition-[width] duration-(--motion-slow) ease-out-expo [&>svg]:block [&>svg]:size-full',
+        'aspect-square shrink-0 transition-[width,border-radius,background-color] duration-(--motion-slow) ease-out-expo [&>svg]:block [&>svg]:size-full',
         small ? 'w-[min(64vw,15rem,34vh)] md:w-[min(40vh,24rem)]' : 'w-[min(72vw,17rem,40vh)] md:w-[min(52vh,28rem)]',
+        // the export cuts at the edge of the picture: so does the stage, then
+        backdrop && ['overflow-hidden', backdrop.round ? 'rounded-full' : 'rounded-xs', !backdrop.bg && 'checker'],
       )}
+      style={backdrop?.bg ? { backgroundColor: backdrop.bg } : undefined}
     />
   );
 }
@@ -97,8 +102,9 @@ export function App({ S }: { S: Strings }) {
   const state = doc.blob;
   const edit = editor.edit;
   const cycles = cyclesOf(editor, doc.book);
+  const prefs = settings.use();
   const [mode, setMode] = useState<Mode>('customize');
-  const [player] = useState(() => new Player(state));
+  const [player] = useState(() => new Player(state, prefs.still));
   const pendingSeek = useRef<number | null>(null);
   const wordmark = useRef<HTMLElement | null>(null);
 
@@ -111,10 +117,12 @@ export function App({ S }: { S: Strings }) {
   }, [player, state]);
 
   useEffect(() => player.setMode(mode), [player, mode]);
+  useEffect(() => player.setFollow(prefs.follow), [player, prefs.follow]);
+  useEffect(() => player.setStill(prefs.still), [player, prefs.still]);
 
   // the intro plays once, on the first frame
   useLayoutEffect(() => {
-    if (player.reduced) return;
+    if (player.still) return;
     const stage = document.getElementById('stage');
     const o = [...(wordmark.current?.querySelectorAll('[data-body], [data-eye]') ?? [])];
     if (!stage) return;
@@ -167,7 +175,7 @@ export function App({ S }: { S: Strings }) {
         <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 md:flex-row md:gap-4 md:px-5 md:pb-0">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
             <div className="flex min-h-0 flex-1 items-center justify-center py-4 md:py-0">
-              <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} />
+              <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} />
             </div>
             {mode === 'animate' ? <Timeline state={state} cycles={cycles} player={player} S={S} className="w-full max-w-5xl animate-rise-in md:mb-1" /> : null}
           </div>

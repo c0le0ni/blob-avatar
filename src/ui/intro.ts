@@ -1,7 +1,9 @@
 // The intro: the o of the "blob" wordmark lifts out of the top bar and grows into
 // the big blob with a spring, opens its eyes, looks around and blinks, while the
 // rest of the page comes in around it. About a second and a half; any click or key
-// skips it, and reduced motion never plays it.
+// skips it, and a still stage (reduced motion, or the setting) never plays it.
+// While it runs it drives the eyes; then following the cursor, if it is on, takes
+// over.
 
 import type { Player } from './player';
 
@@ -103,7 +105,7 @@ export function runIntro({ player, stage, o, chrome, onDone }: IntroParts): () =
       } catch {}
     }
     player.blend();
-    player.input = {};
+    player.input = null;
     window.removeEventListener('pointerdown', finish, true);
     window.removeEventListener('keydown', finish, true);
     onDone();

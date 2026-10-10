@@ -80,7 +80,7 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
         },
         S.linkCopied,
       ),
-    embed: () => run('embed', () => copyText(embedCode(moving)), S.embedCopied),
+    embed: () => run('embed', () => copyText(embedCode(moving, { gaze: saved.follow })), S.embedCopied),
   };
 
   const spin = (id: string, Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>) =>
