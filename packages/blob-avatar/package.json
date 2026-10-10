@@ -1,0 +1,58 @@
+{
+  "name": "blob-avatar",
+  "version": "2.2.0",
+  "description": "An animated blob avatar for React and any page: 12 shapes, 20 expressions and 14 animations, drawn live as SVG.",
+  "license": "MIT",
+  "author": "Coleoni (https://coleoni.com)",
+  "homepage": "https://blob.coleoni.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c0le0ni/blob-avatar.git",
+    "directory": "packages/blob-avatar"
+  },
+  "bugs": "https://github.com/c0le0ni/blob-avatar/issues",
+  "keywords": [
+    "react",
+    "avatar",
+    "blob",
+    "animated",
+    "animation",
+    "character",
+    "mascot",
+    "svg",
+    "web-component",
+    "custom-element"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./dist/element.js"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

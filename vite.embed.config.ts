@@ -7,9 +7,10 @@ import { defineConfig, type Plugin } from 'vite';
 // always serves the latest one.
 const MAJOR = 'v2';
 
-const { version } = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string };
+// The npm package and the embed share their attributes, so they share the version.
+const { version } = JSON.parse(readFileSync(resolve(import.meta.dirname, 'packages/blob-avatar/package.json'), 'utf8')) as { version: string };
 if (`v${version.split('.')[0]}` !== MAJOR) {
-  throw new Error(`package.json says ${version}, but the embed ships as /${MAJOR}/embed.js. Keep a ${MAJOR} build at that path, then add the new major.`);
+  throw new Error(`packages/blob-avatar/package.json says ${version}, but the embed ships as /${MAJOR}/embed.js. Keep a ${MAJOR} build at that path, then add the new major.`);
 }
 
 /** the same file again under its major version */

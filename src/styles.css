@@ -2,6 +2,8 @@
    light "classic" theme on request), the same scales, motion and components. */
 
 @import 'tailwindcss';
+/* the package's source has no utilities in it */
+@source not '../packages';
 
 @font-face {
   font-family: 'Geist Variable';

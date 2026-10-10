@@ -1,13 +1,17 @@
 {
-  "name": "blob-avatar",
+  "name": "coleoni-blob",
   "version": "2.2.0",
   "private": true,
   "type": "module",
-  "description": "Make your own animated blob avatar. Export PNG, GIF or SVG, or embed it with one tag. Free, by Coleoni.",
+  "description": "blob.coleoni.com: make your own animated blob avatar, export it or embed it with one tag. A free product by Coleoni.",
   "license": "MIT",
+  "workspaces": [
+    "packages/blob-avatar"
+  ],
   "scripts": {
     "dev": "vite --port 5320 --strictPort",
     "build": "vite-node scripts/pages.ts && vite build && vite build --config vite.embed.config.ts",
+    "build:lib": "npm run build -w blob-avatar",
     "preview": "vite preview --port 5321",
     "test": "vitest run",
     "check": "tsc --noEmit",
