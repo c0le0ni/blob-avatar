@@ -10,7 +10,7 @@ import { MAX_CLIPS, type BlobState } from '../../engine';
 import type { Strings } from '../../i18n/strings';
 import { cn } from '../../lib/cn';
 import { useMediaQuery } from '../../lib/use-media-query';
-import { duplicateClip, moveClip, removeClip, resizeClip, starts } from '../cycles';
+import { duplicateClip, moveClip, removeClip, resizeClip, starts, tellingMoment } from '../cycles';
 import type { Cycles } from '../editor';
 import { toast } from '../hooks';
 import type { Player } from '../player';
@@ -216,8 +216,9 @@ export function Timeline({ state, cycles, player, S, selected, onSelect, looping
   const select = (i: number) => {
     anchor.current = i;
     onSelect(i);
-    // a looped clip is played from its start by the loop itself
-    if (!looping) player.seek(at[i]);
+    // a looped clip is played from its start by the loop itself. Playing, the clip plays
+    // from its start; paused, the stage shows its telling moment, as its thumbnail does
+    if (!looping) player.seek(at[i] + (player.isPlaying ? 0 : tellingMoment(clips[i])));
   };
 
   const move = (from: number, to: number, key?: string) => {

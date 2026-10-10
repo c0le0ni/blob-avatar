@@ -4,7 +4,7 @@
 // never lost. Plain functions on plain values: the editor (editor.ts) keeps them,
 // with undo.
 
-import { DEFAULT_CYCLE, DEFAULT_DUR, MAX_CLIPS, type Anim, type Clip } from '../engine';
+import { DEFAULT_CYCLE, DEFAULT_DUR, MAX_CLIPS, SHOW_AT, type Anim, type Clip } from '../engine';
 
 /** the template with every animation once, the one a new page opens with */
 export const ALL = 'all';
@@ -79,6 +79,9 @@ export function duplicateClip(clips: Clip[], i: number): Clip[] {
   if (clips.length >= MAX_CLIPS || !clips[i]) return clips;
   return [...clips.slice(0, i + 1), { ...clips[i] }, ...clips.slice(i + 1)];
 }
+
+/** how far into a clip it shows what it does (as its thumbnail does), past the 0.3 s crossfade from the clip before */
+export const tellingMoment = (c: Clip) => Math.min(c.dur - 0.05, Math.max(0.3, c.dur * SHOW_AT[c.anim]));
 
 /** the start of each clip, and the cycle's length */
 export function starts(clips: Clip[]): { at: number[]; length: number } {

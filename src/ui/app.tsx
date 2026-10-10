@@ -9,7 +9,7 @@ import { announce } from './animate/announce';
 import { savedName } from './animate/cycle-menu';
 import { AuditionPill, Library } from './animate/library';
 import { Timeline } from './animate/timeline';
-import { insertClip, starts } from './cycles';
+import { insertClip, starts, tellingMoment } from './cycles';
 import { cyclesOf, useEditor, type Cycles } from './editor';
 import { ExportMenu, exportOptions } from './export-menu';
 import { holdNotice, dismiss, toast, useNotice } from './hooks';
@@ -172,7 +172,8 @@ export function App({ S }: { S: Strings }) {
     const clips = state.cycle;
     if (clips.length >= MAX_CLIPS) return toast(S.full);
     const at = sel === null ? clips.length : sel + 1;
-    pendingSeek.current = starts(clips).at[at] ?? loopLength(state);
+    // the stage shows the new clip: from its start while playing, its telling moment while paused
+    pendingSeek.current = (starts(clips).at[at] ?? loopLength(state)) + (player.isPlaying ? 0 : tellingMoment({ anim, dur: DEFAULT_DUR[anim] }));
     const fresh = base.change((cs) => insertClip(cs, at, anim));
     const said = S.said.added(S.anims[anim], at + 1, clips.length + 1);
     setSelected(at);

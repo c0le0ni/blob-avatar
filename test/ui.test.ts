@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from '../src/engine';
 import { hexToHsv, hsvToHex, normalizeHex } from '../src/ui/color';
-import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts } from '../src/ui/cycles';
+import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts, tellingMoment } from '../src/ui/cycles';
 import { FULL_VIEW, animThumb, embedCode } from '../src/ui/site';
 
 describe('color picker', () => {
@@ -78,6 +78,15 @@ describe('cycle editing', () => {
     expect(duplicateClip(clips, 7)).toBe(clips);
     const full = Array.from({ length: MAX_CLIPS }, (): Clip => ({ anim: 'idle', dur: 1 }));
     expect(duplicateClip(full, 0)).toBe(full);
+  });
+
+  it('shows a clip past the crossfade from the one before, and never past its end', () => {
+    for (const c of [...clips, { anim: 'burst' as const, dur: 0.4 }, { anim: 'notification' as const, dur: 10 }]) {
+      const t = tellingMoment(c);
+      expect(t).toBeLessThan(c.dur);
+      expect(t).toBeGreaterThanOrEqual(Math.min(0.3, c.dur - 0.05));
+    }
+    expect(tellingMoment({ anim: 'idle', dur: 2.4 })).toBe(0.3);
   });
 
   it('knows where each clip starts', () => {
