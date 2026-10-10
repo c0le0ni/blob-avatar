@@ -73,3 +73,20 @@ export function randomState(seed: number): BlobState {
   s.seed = Math.floor(r() * 36 ** 4);
   return s;
 }
+
+/**
+ * A new look for the avatar (the dice in the editor): a shape, a swatch, an
+ * expression and a seed. The cycle stays as it is, and the look always changes:
+ * a roll that lands on the same shape, color and expression is rolled again.
+ */
+export function randomLook(from: BlobState, seed: number): BlobState {
+  const r = rng(seed);
+  const s = cloneState(from);
+  do {
+    s.shape = pick(r, SHAPES);
+    s.color = pick(r, PALETTE).hex;
+    s.expression = pick(r, EXPRESSIONS);
+  } while (s.shape === from.shape && s.color === from.color && s.expression === from.expression);
+  s.seed = Math.floor(r() * 36 ** 4);
+  return s;
+}
