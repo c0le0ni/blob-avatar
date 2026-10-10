@@ -9,7 +9,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: [{ find: /^blob-avatar\/(.*)$/, replacement: `${resolve(import.meta.dirname, 'packages/blob-avatar/src')}/$1` }],
+    alias: [
+      { find: /^blob-avatar$/, replacement: resolve(import.meta.dirname, 'packages/blob-avatar/src/index.ts') },
+      { find: /^blob-avatar\/(.*)$/, replacement: `${resolve(import.meta.dirname, 'packages/blob-avatar/src')}/$1` },
+    ],
   },
   build: {
     target: 'es2022',
@@ -22,5 +25,5 @@ export default defineConfig({
     },
   },
   worker: { format: 'es' },
-  test: { include: ['test/**/*.test.ts'] },
+  test: { include: ['test/**/*.test.{ts,tsx}'] },
 } as never);

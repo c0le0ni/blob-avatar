@@ -21,6 +21,9 @@
     ],
     "jsx": "react-jsx",
     "paths": {
+      "blob-avatar": [
+        "./packages/blob-avatar/src/index.ts"
+      ],
       "blob-avatar/*": [
         "./packages/blob-avatar/src/*"
       ]
