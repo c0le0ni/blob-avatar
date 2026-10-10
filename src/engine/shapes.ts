@@ -8,7 +8,8 @@ import { TAU } from './math';
 
 export const BODY_POINTS = 56;
 
-export const SHAPES = ['circle', 'pebble', 'squircle', 'capsule', 'triangle', 'hexagon', 'cloud', 'droplet'] as const;
+/** in three rows: round, geometric, organic */
+export const SHAPES = ['circle', 'pebble', 'squircle', 'capsule', 'triangle', 'diamond', 'hexagon', 'star', 'cloud', 'droplet', 'heart', 'ghost'] as const;
 export type Shape = (typeof SHAPES)[number];
 
 /** outlines only animations use */
@@ -99,6 +100,29 @@ export const stadium = (w: number, h: number): Pt[] => roundedPolygon([[-w / 2, 
 /** n corners on a circle of radius R, the first at the top, turned by `turn` */
 const regular = (n: number, R: number, turn = 0): Pt[] => Array.from({ length: n }, (_, i) => [R * Math.sin(turn + (i * TAU) / n), -R * Math.cos(turn + (i * TAU) / n)] as Pt);
 
+/**
+ * The classic heart curve, y down, scaled by s. Its point is softened (a power p of
+ * sin where the curve has 3) and its cleft made shallower (a bump of d, as narrow as
+ * m makes it, lifts the top), so the face sits clearly below the cleft.
+ */
+function heartCurve(p: number, s: number, d: number, m: number, samples = 1440): Pt[] {
+  return Array.from({ length: samples }, (_, i) => {
+    const t = (i / samples) * TAU;
+    const x = 16 * Math.sign(Math.sin(t)) * Math.abs(Math.sin(t)) ** p;
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t) + d * Math.cos(t / 2) ** (2 * m));
+    return [x * s, y * s] as Pt;
+  });
+}
+
+/** a dome of radius r on straight sides, down to a hem of three scallops that hang amp below it */
+function ghostOutline(r: number, top: number, hem: number, amp: number): Pt[] {
+  const pts: Pt[] = [];
+  // the dome, left to right; then the hem, right to left (resampling draws the sides)
+  for (let i = 0; i <= 180; i++) pts.push([-r * Math.cos((Math.PI * i) / 180), top - r * Math.sin((Math.PI * i) / 180)]);
+  for (let i = 0; i <= 360; i++) pts.push([r - (2 * r * i) / 360, hem + amp * Math.abs(Math.sin((3 * Math.PI * i) / 360))]);
+  return pts;
+}
+
 // ---------------------------------------------------------------- the outlines
 
 const OUTLINES: Record<Figure, () => Pt[]> = {
@@ -109,12 +133,20 @@ const OUTLINES: Record<Figure, () => Pt[]> = {
   squircle: () => polar((a) => ((Math.abs(Math.sin(a)) / 0.959) ** 4.179 + (Math.abs(Math.cos(a)) / 0.9552) ** 4.179) ** (-1 / 4.179)),
   capsule: () => stadium(2.0778, 1.2438),
   triangle: () => roundedPolygon([[0, -1.5296], [1.2656, 0.647], [-1.2656, 0.647]], 0.3402),
+  // a rhombus, taller than wide
+  diamond: () => roundedPolygon([[0, -1.2], [1, 0], [0, 1.2], [-1, 0]], 0.3),
   // flat on top and bottom, a corner on each side
   hexagon: () => roundedPolygon([[-0.5401, -0.9368], [0.5401, -0.9368], [1.0802, 0], [0.5401, 0.9368], [-0.5401, 0.9368], [-1.0802, 0]], 0.2598),
+  // five plump points
+  star: () => roundedPolygon(regular(10, 1).map(([x, y], i) => [x * (i % 2 ? 0.66 : 1.2), y * (i % 2 ? 0.66 : 1.2)] as Pt), 0.18),
   // a cloud: five round bumps
   cloud: () => polar((a) => unionRay([[0.4723, 0.1392, 0.4949], [0.03, 0.2334, 0.6002], [-0.4322, 0.139, 0.535], [-0.2296, -0.3544, 0.4792], [0.3097, -0.2956, 0.4386]], a), 1440),
   // a drop, its soft tip up
   droplet: () => polar(cosines([0.7341, -0.1584, 0.1602, 0.0675, 0.0383, 0.0278, 0.0236, 0.0189, 0.014, 0.0109, 0.0095, 0.0083, 0.0067, 0.0055, 0.005, 0.0044, 0.0038, 0.0032, 0.003, 0.0027, 0.0024]), 1440),
+  // a heart: two lobes on top, a soft point at the bottom
+  heart: () => heartCurve(2.5, 0.062, 4, 8),
+  // a dome, straight sides and a hem with three scallops
+  ghost: () => ghostOutline(0.86, -0.13, 0.77, 0.2),
   egg: () => polar(series([0.8993, -0.0294, -0.0022, 0.0888, -0.0056, 0.0221, -0.0024, 0.013, -0.0016])),
   // a hexagon standing on a corner
   hexa: () => roundedPolygon(regular(6, 1.0483, -0.0273), 0.3179),
@@ -124,15 +156,25 @@ const OUTLINES: Record<Figure, () => Pt[]> = {
   stem: () => taper(0.131, 0.085, 0.84),
 };
 
+/** where each outline starts: the top, or where it crosses the vertical axis (shapes with two tops) */
+const START: Partial<Record<Figure, 'axis'>> = { heart: 'axis' };
+
+/**
+ * How much lower than the middle of its box a shape sits, in body radii. The lobes
+ * make a heart heavy on top: centered on its box it floats high, and big eyes land
+ * low, where it narrows. It sits halfway to its center of area instead.
+ */
+const DROP: Partial<Record<Figure, number>> = { heart: 0.09 };
+
 const cache = new Map<Figure, Contour>();
 
 /** a shape's or figure's contour, centered on its box */
 export function shapeContour(fig: Figure): Contour {
   const hit = cache.get(fig);
   if (hit) return hit;
-  const c = resample(OUTLINES[fig](), BODY_POINTS);
+  const c = resample(OUTLINES[fig](), BODY_POINTS, { start: START[fig] });
   const b = bounds(c);
-  const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+  const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2 - (DROP[fig] ?? 0);
   for (let i = 0; i < BODY_POINTS; i++) {
     c.x[i] -= cx;
     c.y[i] -= cy;

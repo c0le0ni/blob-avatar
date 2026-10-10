@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
 import { fromHash, randomState, toHash } from '../src/engine/codec';
-import { resample, type Pt } from '../src/engine/contour';
+import { bounds, polygonArea, resample, type Pt } from '../src/engine/contour';
+import { shapeContour } from '../src/engine/shapes';
 import { toSvgString } from '../src/render/svg';
 
 const state = (p: Partial<BlobState> = {}): BlobState => ({ ...cloneState(DEFAULT_STATE), ...p });
@@ -65,6 +66,30 @@ describe('frame', () => {
 });
 
 describe('shapes', () => {
+  it('twelve shapes, all about the size of the circle, and none reaching far past it', () => {
+    expect(SHAPES).toHaveLength(12);
+    for (const shape of SHAPES) {
+      const c = shapeContour(shape);
+      const area = polygonArea(c) / Math.PI;
+      expect(area, shape).toBeGreaterThan(0.55);
+      expect(area, shape).toBeLessThan(1.1);
+      const b = bounds(c);
+      expect(Math.max(-b.x0, b.x1, -b.y0, b.y1), shape).toBeLessThan(1.1);
+    }
+  });
+
+  it('starts every symmetric shape on the vertical axis, at its top, going clockwise', () => {
+    for (const shape of ['circle', 'squircle', 'triangle', 'diamond', 'star', 'droplet', 'heart', 'ghost'] as const) {
+      const c = shapeContour(shape);
+      expect(Math.abs(c.x[0]), shape).toBeLessThan(1e-6);
+      expect(c.y[0], shape).toBeLessThan(0);
+      expect(c.x[1], shape).toBeGreaterThan(0);
+    }
+    // the heart starts in the notch between its lobes, not on one of them
+    const heart = shapeContour('heart');
+    expect(heart.y[0]).toBeGreaterThan(Math.min(...heart.y) + 0.1);
+  });
+
   it("an outline with two tops starts on one of them by default, and between them with start: 'axis'", () => {
     const twoTops: Pt[] = [[-1, -1], [-0.5, -1.2], [0, -0.8], [0.5, -1.2], [1, -1], [1, 1], [-1, 1]];
     expect(Math.abs(resample(twoTops, 24).x[0])).toBeCloseTo(0.5);

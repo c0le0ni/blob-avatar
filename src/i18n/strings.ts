@@ -86,7 +86,7 @@ const en = {
   skills: 'Coleoni Skills',
   newTab: '(opens in a new tab)',
   // ------------------------------------------------------------ names
-  shapes: { circle: 'Circle', pebble: 'Pebble', squircle: 'Squircle', capsule: 'Capsule', triangle: 'Triangle', hexagon: 'Hexagon', cloud: 'Cloud', droplet: 'Droplet' } satisfies Record<Shape, string>,
+  shapes: { circle: 'Circle', pebble: 'Pebble', squircle: 'Squircle', capsule: 'Capsule', triangle: 'Triangle', diamond: 'Diamond', hexagon: 'Hexagon', star: 'Star', cloud: 'Cloud', droplet: 'Droplet', heart: 'Heart', ghost: 'Ghost' } satisfies Record<Shape, string>,
   expressions: {
     neutral: 'Neutral', attentive: 'Attentive', surprised: 'Surprised', excited: 'Excited', happy: 'Happy', laughing: 'Laughing', angry: 'Angry', sad: 'Sad',
     scared: 'Scared', suspicious: 'Suspicious', confused: 'Confused', curious: 'Curious', proud: 'Proud', shy: 'Shy', unimpressed: 'Unimpressed', sleepy: 'Sleepy',
@@ -177,7 +177,7 @@ const pt: Strings = {
   github: 'GitHub',
   skills: 'Coleoni Skills',
   newTab: '(abre em outra aba)',
-  shapes: { circle: 'Círculo', pebble: 'Seixo', squircle: 'Quadrado', capsule: 'Cápsula', triangle: 'Triângulo', hexagon: 'Hexágono', cloud: 'Nuvem', droplet: 'Gota' },
+  shapes: { circle: 'Círculo', pebble: 'Seixo', squircle: 'Quadrado', capsule: 'Cápsula', triangle: 'Triângulo', diamond: 'Losango', hexagon: 'Hexágono', star: 'Estrela', cloud: 'Nuvem', droplet: 'Gota', heart: 'Coração', ghost: 'Fantasma' },
   expressions: {
     neutral: 'Neutro', attentive: 'Atento', surprised: 'Surpreso', excited: 'Animado', happy: 'Feliz', laughing: 'Rindo', angry: 'Bravo', sad: 'Triste',
     scared: 'Assustado', suspicious: 'Desconfiado', confused: 'Confuso', curious: 'Curioso', proud: 'Orgulhoso', shy: 'Tímido', unimpressed: 'Indiferente', sleepy: 'Sonolento',
