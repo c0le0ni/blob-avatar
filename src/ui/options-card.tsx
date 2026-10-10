@@ -55,7 +55,7 @@ const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 function Presets({ state, edit, S }: { state: BlobState; edit: Edit; S: Strings }) {
   const thumbs = useMemo(() => PRESETS.map((p) => lookThumb(p)), []);
   return (
-    <div role="group" aria-label={S.presets} className="-m-1 flex snap-x snap-mandatory justify-between gap-1 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:none]">
+    <div role="group" aria-label={S.presets} className="-m-1 flex snap-x snap-mandatory justify-between gap-1 overflow-x-auto touch:gap-0.5 overscroll-x-contain p-1 [scrollbar-width:none]">
       {PRESETS.map((p, i) => {
         const on = hasLook(state, p);
         const name = capital(describe({ ...state, ...p }, S));
