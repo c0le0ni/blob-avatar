@@ -3,7 +3,7 @@
 // function of time and seed, and every period is fitted to the cycle's length so
 // exports loop.
 
-import { clipPose, rest, type PartSpec, type Pose, type TrailSpec } from './animations';
+import { clipPose, rest, type Pose } from './animations';
 import type { Expression, Face } from './face';
 import { lerp, mod, TAU } from './math';
 import { hash } from './prng';
@@ -26,8 +26,8 @@ const xfade = (u: number) => (1 - Math.exp(-u / 0.075)) / (1 - Math.exp(-XFADE /
 /** a period close to `p` that fits a whole number of times in the loop */
 export const fit = (p: number, loop: number) => (loop > 0 ? loop / Math.max(1, Math.round(loop / p)) : p);
 
-const fade = <T extends { alpha: number }>(list: T[], w: number) => list.map((x) => ({ ...x, alpha: x.alpha * w }));
-const weigh = <T extends { w: number }>(list: T[], w: number) => list.map((x) => ({ ...x, w: x.w * w }));
+/** two lists as one, each item's share (its key k) faded: the first list by 1 - w, the second by w */
+const join = <T>(a: T[], b: T[], k: keyof T, w: number): T[] => [...a, ...b].map((x, i) => ({ ...x, [k]: (x[k] as number) * (i < a.length ? 1 - w : w) }));
 
 /** a clip's pose as a motion, its looks as lists that another motion can join */
 export function toMotion(p: Pose): Motion {
@@ -48,11 +48,11 @@ export function toMotion(p: Pose): Motion {
 export function mixMotion(a: Motion, b: Motion, w: number): Motion {
   const out: Motion = {
     ...b,
-    exprs: [...weigh(a.exprs, 1 - w), ...weigh(b.exprs, w)],
-    figs: [...weigh(a.figs, 1 - w), ...weigh(b.figs, w)],
-    faces: [...weigh(a.faces, 1 - w), ...weigh(b.faces, w)],
-    parts: [...fade<PartSpec>(a.parts, 1 - w), ...fade<PartSpec>(b.parts, w)],
-    trails: [...fade<TrailSpec>(a.trails, 1 - w), ...fade<TrailSpec>(b.trails, w)],
+    exprs: join(a.exprs, b.exprs, 'w', w),
+    figs: join(a.figs, b.figs, 'w', w),
+    faces: join(a.faces, b.faces, 'w', w),
+    parts: join(a.parts, b.parts, 'alpha', w),
+    trails: join(a.trails, b.trails, 'alpha', w),
   };
   for (const k of NUMERIC) out[k] = lerp(a[k], b[k], w);
   return out;

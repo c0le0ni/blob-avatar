@@ -55,15 +55,24 @@ export interface FrameInput {
   open?: number;
   /** a squash and a hop (a click), 0..1 of the way through; 0 and 1 are the blob at rest */
   poke?: number;
-  /** an animation played over the cycle, which keeps running underneath: t is its own time, 0..dur */
-  react?: { anim: Anim; t: number; dur: number } | null;
+  /** an animation over the cycle, which keeps running underneath: t is its own time, 0..dur; with hop, a poke goes along unless still */
+  react?: (Reaction & { t: number }) | null;
 }
 
 /** how much of a reaction shows at its time t: in over 0.12 s, out over its last 0.2 s, nothing at either end */
 export const envelope = (t: number, dur: number) => smooth(Math.min(t / 0.12, (dur - t) / 0.2));
 
-/** the hop of a poke: up to a quarter of the body, in the air from 0.2 to 0.65 of the way */
-const air = (u: number) => clamp((u - 0.2) / 0.45, 0, 1);
+/** what a click plays: an animation over the cycle for dur seconds, with a hop or without */
+export interface Reaction {
+  anim: Anim;
+  dur: number;
+  hop?: boolean;
+}
+
+/** the reaction by default: a wink and a hop */
+export const POKE: Reaction = { anim: 'wink', dur: 0.8, hop: true };
+
+/** half a sine over 0..1, flat outside it */
 const wave = (v: number) => Math.sin(Math.PI * clamp(v, 0, 1));
 
 /** a circle in the drawing, from body units */
@@ -134,14 +143,20 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
     m.parts = [];
     m.trails = [];
   }
-  // a reaction comes in over the cycle and goes, the way the cycle turns from clip to clip
+  // a reaction comes in over the cycle and goes, the way the cycle turns from clip to clip,
+  // and the eyes close on the way in and out, to open in place
   const r = input.react;
-  if (r) m = mixMotion(m, toMotion(clipPose(r.anim, r.t, r.dur, state.seed)), envelope(r.t, r.dur));
+  if (r) {
+    const w = envelope(r.t, r.dur);
+    m = mixMotion(m, toMotion(clipPose(r.anim, r.t, r.dur, state.seed)), w);
+    m.shut = Math.max(m.shut, 0.94 * Math.sqrt(Math.sin(Math.PI * w)));
+  }
   // a poke squashes the blob on the ground, hops and lands with a smaller squash; the dots, lines and gap go along
-  const u = input.poke ?? 0;
+  const u = input.poke ?? (r?.hop && !still ? r.t / r.dur : 0);
   let hy = 0;
   if (u > 0 && u < 1) {
-    const a = air(u);
+    // in the air from 0.2 to 0.65 of the way, up to a quarter of the body
+    const a = clamp((u - 0.2) / 0.45, 0, 1);
     const e = 0.08 * wave(a) - 0.16 * wave(u / 0.22) - 0.09 * wave((u - 0.65) / 0.35);
     hy = a * (a - 1);
     m.sx *= 1 - 0.7 * e;

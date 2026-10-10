@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from '../src/engine';
 import { fromHash, fromParams, randomLook, randomState, toHash } from '../src/engine/codec';
 import { springGaze, type Gaze } from '../src/engine/gaze';
 import { bounds, polygonArea, resample, type Contour, type Pt } from '../src/engine/contour';
@@ -234,10 +234,11 @@ describe('poke and reaction', () => {
     expect(height(wink, 1)).toBeLessThan(height(open, 1) / 2);
   });
 
-  it('a still blob shows a reaction as a pose', () => {
+  it('the default reaction hops as it goes, and a still blob shows it as a pose, without the hop', () => {
     const s = state();
-    const pose = frame(s, 0, { still: true, react: { anim: 'wink', t: 0.4, dur: 0.8 } });
+    expect(toSvgString(frame(s, 3, { react: { ...POKE, t: 0.336 } }))).toBe(toSvgString(frame(s, 3, { react: { anim: 'wink', dur: 0.8, t: 0.336 }, poke: 0.42 })));
+    const pose = frame(s, 0, { still: true, react: { ...POKE, t: 0.4 } });
     expect(toSvgString(pose)).not.toBe(toSvgString(frame(s, 0, { still: true })));
-    expect(toSvgString(pose)).toBe(toSvgString(frame(s, 5, { still: true, react: { anim: 'wink', t: 0.4, dur: 0.8 } })));
+    expect(toSvgString(pose)).toBe(toSvgString(frame(s, 5, { still: true, react: { anim: 'wink', dur: 0.8, t: 0.4 } })));
   });
 });

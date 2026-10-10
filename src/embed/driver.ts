@@ -1,9 +1,10 @@
 // What makes an avatar move on a page: one animation loop for every avatar, which
-// draws only the ones on screen, and the eyes easing toward the cursor. drive()
-// runs a LiveSvg inside a host element: <blob-avatar> uses it, and so can anything
-// else that draws one.
+// draws only the ones on screen, the eyes easing toward the cursor, and the
+// reaction to a click. drive() runs a LiveSvg inside a host element: <blob-avatar>
+// uses it, and so can anything else that draws one.
 
-import { DEFAULT_STATE, frame, loopLength, type BlobState } from '../engine';
+import { DEFAULT_STATE, POKE, frame, loopLength, type BlobState, type FrameInput, type Reaction } from '../engine';
+import { parseCycle } from '../engine/codec';
 import { gazeTarget, springGaze, type Gaze } from '../engine/gaze';
 import type { LiveSvg } from '../render/svg';
 
@@ -13,6 +14,8 @@ export interface Options {
   gaze: boolean;
   /** holds still */
   paused: boolean;
+  /** what a click plays (and Enter or Space, when the page made the host focusable); null: nothing */
+  reaction: Reaction | null;
 }
 
 export interface Driver {
@@ -22,7 +25,16 @@ export interface Driver {
   start(): void;
   /** leaves the loop: the host left the page */
   stop(): void;
+  /** plays the reaction now (the default one when none is set); one at a time */
+  react(): void;
 }
+
+/**
+ * A reaction from the attribute's value: an animation's name, at its own length or
+ * with seconds as in `animation` (exclaim, exclaim.1.2). Empty or anything else is
+ * the default, a wink and a hop.
+ */
+export const reactionOf = (v: string | null | undefined): Reaction => parseCycle(v)?.[0] ?? POKE;
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -86,11 +98,19 @@ if (typeof document !== 'undefined') document.addEventListener('visibilitychange
 // ---------------------------------------------------------------- one avatar
 
 export function drive(host: HTMLElement, svg: LiveSvg): Driver {
-  let o: Options = { state: DEFAULT_STATE, gaze: false, paused: false };
+  let o: Options = { state: DEFAULT_STATE, gaze: false, paused: false, reaction: null };
   let t = 0;
   let gaze: Gaze = [0, 0, 0, 0];
+  /** the reaction playing and how far in it is, in seconds */
+  let now: { re: Reaction; r: number } | null = null;
   const still = () => o.paused || reduced();
-  const draw = () => svg.update(frame(o.state, t, still() ? { still: true } : pointerNear && o.gaze ? { gaze: [gaze[0], gaze[1]] } : {}));
+  const draw = () => {
+    const s = still();
+    const input: FrameInput = s ? { still: s } : pointerNear && o.gaze ? { gaze: [gaze[0], gaze[1]] } : {};
+    // a still avatar holds the middle of the reaction
+    if (now) input.react = { ...now.re, t: s ? now.re.dur / 2 : now.r };
+    svg.update(frame(o.state, t, input));
+  };
   const me: Live = {
     // only the avatars on screen are drawn
     seen: !watcher,
@@ -99,14 +119,40 @@ export function drive(host: HTMLElement, svg: LiveSvg): Driver {
       t = (t + dt) % (loopLength(o.state) || 2.4);
       // the eyes ease toward the cursor on a spring
       if (pointer && o.gaze) gaze = springGaze(gaze, gazeTarget(pointer[0], pointer[1], host.getBoundingClientRect(), innerWidth * 0.4, innerHeight * 0.4), dt);
+      // the cycle runs on under the reaction
+      if (now && (now.r += dt) >= now.re.dur) now = null;
       draw();
       return true;
     },
+  };
+  const react = () => {
+    if (now) return;
+    now = { re: o.reaction ?? POKE, r: 0 };
+    // holding still, it shows the reaction's pose for 0.8 s, without moving
+    if (still()) {
+      draw();
+      setTimeout(() => {
+        now = null;
+        draw();
+      }, 800);
+    } else wake();
+  };
+  const click = () => o.reaction && react();
+  // the keys only reach a host the page made focusable (tabindex)
+  const key = (e: KeyboardEvent) => {
+    if (!o.reaction || e.target !== host || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    react();
   };
   return {
     set(p) {
       o = { ...o, ...p };
       if (o.gaze) listen();
+      // only an avatar that reacts listens for clicks (the same listener twice is one)
+      if (o.reaction) {
+        host.addEventListener('click', click);
+        host.addEventListener('keydown', key);
+      }
       draw();
       wake();
     },
@@ -119,5 +165,6 @@ export function drive(host: HTMLElement, svg: LiveSvg): Driver {
       live.delete(host);
       watcher?.unobserve(host);
     },
+    react,
   };
 }
