@@ -45,7 +45,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json"
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "react": ">=18"
