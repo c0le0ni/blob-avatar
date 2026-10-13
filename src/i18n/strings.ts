@@ -205,7 +205,7 @@ const pt: Strings = {
   shade: 'Saturação e brilho',
   hex: 'Hex',
   stageLabel: (d: string) => `Seu blob: ${d}`,
-  describe: (shape: string, color: string, expr: string) => `${shape.toLowerCase()} ${color.toLowerCase()}, ${expr.toLowerCase()}`,
+  describe: (shape: string, color: string, expr: string) => `${shape.toLowerCase()}, ${color.toLowerCase()}, ${expr.toLowerCase()}`,
   library: 'Animações',
   addAnim: (name: string) => `Adicionar ${name} no fim`,
   addAfter: (name: string, after: string) => `Adicionar ${name} depois de ${after}`,
