@@ -5,7 +5,7 @@ import { randomLook } from 'blob-avatar/engine/codec';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
-import { announce } from './animate/announce';
+import { announce, Announcer } from './animate/announce';
 import { savedName } from './animate/cycle-menu';
 import { AuditionPill, Library } from './animate/library';
 import { Timeline } from './animate/timeline';
@@ -223,15 +223,17 @@ export function App({ S }: { S: Strings }) {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
-  /** a new look from the swatches; the cycle stays */
-  const randomize = () =>
+  /** a new look from the swatches; the cycle stays, and a screen reader hears what came out */
+  const randomize = () => {
+    const r = randomLook(state, Math.floor(Math.random() * 2 ** 31));
     edit((s) => {
-      const r = randomLook(s, Math.floor(Math.random() * 2 ** 31));
       s.shape = r.shape;
       s.color = r.color;
       s.expression = r.expression;
       s.seed = r.seed;
     });
+    announce(S.stageLabel(describe(r, S)));
+  };
 
   useEffect(() => {
     shortcuts.current = {
@@ -373,6 +375,7 @@ export function App({ S }: { S: Strings }) {
         </footer>
       </div>
       <Toaster />
+      <Announcer />
     </TooltipProvider>
   );
 }

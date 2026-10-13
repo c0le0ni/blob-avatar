@@ -18,7 +18,7 @@ import { Button } from '../primitives/button';
 import { Keys } from '../primitives/kbd';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../primitives/tooltip';
 import { animThumb } from '../site';
-import { announce, useAnnouncement } from './announce';
+import { announce } from './announce';
 import { CycleMenu, savedName } from './cycle-menu';
 import { GIF_LONG, clock, clockTime, gifFrames, secs } from './format';
 import { Inspector } from './inspector';
@@ -39,16 +39,6 @@ interface TimelineProps {
   looping: boolean;
   onLoop: (on: boolean) => void;
   className?: string;
-}
-
-/** the polite live region the timeline speaks through */
-function Announcer() {
-  const said = useAnnouncement();
-  return (
-    <div role="status" aria-live="polite" aria-atomic className="sr-only">
-      <span key={said.n}>{said.text}</span>
-    </div>
-  );
 }
 
 /** a GIF of this cycle is long: the clock says so, and tapping it says it again */
@@ -307,7 +297,6 @@ export function Timeline({ state, cycles, player, S, selected, onSelect, looping
 
   return (
     <section aria-label={S.timeline} className={cn('flex min-w-0 flex-col rounded-xl border border-border bg-surface shadow-lg', className)}>
-      <Announcer />
       <p id="clip-help" className="sr-only">
         {S.clipHelp}
       </p>
