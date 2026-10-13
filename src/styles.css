@@ -49,7 +49,8 @@
   --pulse-border-strong: oklch(1 0 0 / 14%);
   --pulse-foreground: oklch(0.93 0.005 260);
   --pulse-foreground-muted: oklch(0.7 0.008 260);
-  --pulse-foreground-subtle: oklch(0.53 0.008 260);
+  /* the faintest text still reads at 4.5:1, even on a raised surface under the pointer */
+  --pulse-foreground-subtle: oklch(0.655 0.008 260);
   --pulse-hover: oklch(1 0 0 / 5%);
   --pulse-pressed: oklch(1 0 0 / 9%);
   --pulse-accent: oklch(0.9 0.235 129);
@@ -83,7 +84,8 @@
   --pulse-border-strong: oklch(0 0 0 / 16%);
   --pulse-foreground: oklch(0.21 0.006 260);
   --pulse-foreground-muted: oklch(0.5 0.01 260);
-  --pulse-foreground-subtle: oklch(0.64 0.01 260);
+  /* 4.5:1 on the sunken fields, the darkest ground it sits on */
+  --pulse-foreground-subtle: oklch(0.53 0.01 260);
   --pulse-hover: oklch(0 0 0 / 4%);
   --pulse-pressed: oklch(0 0 0 / 8%);
   /* the light theme carries no green in its chrome: the accent is ink */
