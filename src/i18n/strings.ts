@@ -19,6 +19,7 @@ const en = {
   home: 'Blob Avatar by Coleoni, home',
   coleoni: 'Coleoni',
   // ------------------------------------------------------------ app
+  skipToContent: 'Skip to content',
   mode: 'Mode',
   customize: 'Customize',
   animate: 'Animate',
@@ -187,6 +188,7 @@ const pt: Strings = {
   noscript: 'O Blob Avatar precisa de JavaScript para desenhar o seu blob.',
   home: 'Blob Avatar da Coleoni, início',
   coleoni: 'Coleoni',
+  skipToContent: 'Pular para o conteúdo',
   mode: 'Modo',
   customize: 'Personalizar',
   animate: 'Animar',

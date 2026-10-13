@@ -97,25 +97,30 @@ interface TopBarProps {
   S: Strings;
   center: ReactNode;
   end: ReactNode;
+  /** a second row, still part of the banner (the mode switch on narrower screens) */
+  below?: ReactNode;
   onWordmark: (draw: (now: number) => void, host: HTMLElement) => void;
   className?: string;
 }
 
-export function TopBar({ S, center, end, onWordmark, className }: TopBarProps) {
+export function TopBar({ S, center, end, below, onWordmark, className }: TopBarProps) {
   return (
-    <header className={cn('relative z-30 flex h-14 shrink-0 items-center gap-3 px-3 sm:px-5', className)}>
-      <div className="flex min-w-0 items-center gap-3">
-        <a href={coleoniHome(S)} rel="noopener" aria-label={S.coleoni} data-intro="translateX(-6px)" className="flex shrink-0 rounded-sm text-foreground transition-opacity hover:opacity-80">
-          <ColeoniLockup className="max-sm:hidden" />
-          <ColeoniSymbol className="sm:hidden" />
-        </a>
-        <span aria-hidden data-intro="scaleY(0)" className="h-4.5 w-px shrink-0 -skew-x-[18deg] bg-border-strong" />
-        <a href={S.path} aria-label={S.home} className="flex shrink-0 rounded-sm text-foreground">
-          <BlobWordmark onLive={onWordmark} />
-        </a>
+    <header className={cn('relative z-30 shrink-0', className)}>
+      <div className="relative flex h-14 items-center gap-3 px-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <a href={coleoniHome(S)} rel="noopener" aria-label={S.coleoni} data-intro="translateX(-6px)" className="flex shrink-0 rounded-sm text-foreground transition-opacity hover:opacity-80">
+            <ColeoniLockup className="max-sm:hidden" />
+            <ColeoniSymbol className="sm:hidden" />
+          </a>
+          <span aria-hidden data-intro="scaleY(0)" className="h-4.5 w-px shrink-0 -skew-x-[18deg] bg-border-strong" />
+          <a href={S.path} aria-label={S.home} className="flex shrink-0 rounded-sm text-foreground">
+            <BlobWordmark onLive={onWordmark} />
+          </a>
+        </div>
+        <div className="absolute left-1/2 -translate-x-1/2 max-lg:hidden">{center}</div>
+        <div className="ml-auto flex items-center gap-1">{end}</div>
       </div>
-      <div className="absolute left-1/2 -translate-x-1/2 max-lg:hidden">{center}</div>
-      <div className="ml-auto flex items-center gap-1">{end}</div>
+      {below}
     </header>
   );
 }

@@ -32,8 +32,8 @@
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
-    <h1 class="sr-only">Blob Avatar: make your own animated avatar</h1>
-    <div id="root"></div>
+    <!-- the heading is there before the script runs; the app then draws it inside its <main> -->
+    <div id="root"><h1 class="sr-only">Blob Avatar: make your own animated avatar</h1></div>
     <noscript><p style="padding: 24px; text-align: center">Blob Avatar needs JavaScript to draw your blob.</p></noscript>
   </body>
 </html>

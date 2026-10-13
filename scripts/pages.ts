@@ -11,7 +11,7 @@ import { SITE } from '../src/ui/site';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** the page shell: its head for search and sharing, a heading, and where React mounts */
+/** the page shell: its head for search and sharing, and where React mounts, holding the heading until it does */
 function page(S: Strings): string {
   const url = `${SITE}${S.path}`;
   return `<!doctype html>
@@ -48,8 +48,8 @@ function page(S: Strings): string {
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
-    <h1 class="sr-only">${esc(S.h1)}</h1>
-    <div id="root"></div>
+    <!-- the heading is there before the script runs; the app then draws it inside its <main> -->
+    <div id="root"><h1 class="sr-only">${esc(S.h1)}</h1></div>
     <noscript><p style="padding: 24px; text-align: center">${esc(S.noscript)}</p></noscript>
   </body>
 </html>

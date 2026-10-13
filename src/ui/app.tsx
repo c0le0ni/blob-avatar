@@ -261,6 +261,19 @@ export function App({ S }: { S: Strings }) {
   return (
     <TooltipProvider>
       <div className="flex min-h-dvh flex-col md:h-dvh md:min-h-[40rem]">
+        {/* the address bar's hash is the blob: the link moves the focus itself rather than change it */}
+        <a
+          href="#conteudo"
+          className="sr-only z-60 rounded-lg border border-border-strong bg-surface-raised text-sm font-medium text-foreground shadow-lg focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:px-3 focus:py-2"
+          onClick={(e) => {
+            e.preventDefault();
+            const main = document.getElementById('conteudo');
+            main?.focus();
+            main?.scrollIntoView({ block: 'start' });
+          }}
+        >
+          {S.skipToContent}
+        </a>
         <TopBar
           S={S}
           onWordmark={(draw, host) => {
@@ -268,6 +281,11 @@ export function App({ S }: { S: Strings }) {
             wordmark.current = host;
           }}
           center={<div data-intro="translateY(-6px)">{modeSwitch}</div>}
+          below={
+            <div data-intro="translateY(-4px)" className="flex justify-center px-3 pt-1 pb-2 lg:hidden">
+              {modeSwitch}
+            </div>
+          }
           end={
             <>
               <div data-intro="translateY(-6px)" className="flex items-center gap-0.5 sm:gap-1">
@@ -281,10 +299,8 @@ export function App({ S }: { S: Strings }) {
             </>
           }
         />
-        <div data-intro="translateY(-4px)" className="flex justify-center px-3 pt-1 pb-2 lg:hidden">
-          {modeSwitch}
-        </div>
-        <main className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 md:flex-row md:gap-4 md:px-5 md:pb-0">
+        <main id="conteudo" tabIndex={-1} className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 outline-none md:flex-row md:gap-4 md:px-5 md:pb-0">
+          <h1 className="sr-only">{S.h1}</h1>
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
             {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
