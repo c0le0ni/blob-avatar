@@ -39,6 +39,8 @@ const en = {
   library: 'Animations',
   addAnim: (name: string) => `Add ${name} at the end`,
   addAfter: (name: string, after: string) => `Add ${name} after ${after}`,
+  /** a library tile's name: what it shows (name, length, times in the cycle) in that order, then what the press does */
+  addTile: (name: string, secs: string, times: string | null, after: string | null) => `${name}, ${secs}${times ? `, ${times.toLowerCase()}` : ''}: ${after ? `add after ${after}` : 'add at the end'}`,
   addsAtEnd: 'Adds at the end',
   addsAfter: (name: string) => `Adds after ${name}`,
   preview: (name: string) => `Preview ${name}`,
@@ -207,6 +209,7 @@ const pt: Strings = {
   library: 'Animações',
   addAnim: (name: string) => `Adicionar ${name} no fim`,
   addAfter: (name: string, after: string) => `Adicionar ${name} depois de ${after}`,
+  addTile: (name: string, secs: string, times: string | null, after: string | null) => `${name}, ${secs}${times ? `, ${times.toLowerCase()}` : ''}: ${after ? `adicionar depois de ${after}` : 'adicionar no fim'}`,
   addsAtEnd: 'Entra no fim',
   addsAfter: (name: string) => `Entra depois de ${name}`,
   preview: (name: string) => `Ver ${name}`,

@@ -70,7 +70,8 @@ function Item({ anim, look, thumb, count, full, previewing, after, S, onAdd, onP
   const name = S.anims[anim];
   const { art, start, stop } = useHoverPlay(look, anim, thumb);
   const add = after ? S.addAfter(name, after) : S.addAnim(name);
-  const label = count ? `${add}. ${S.inCycle(count)}` : add;
+  // the name says what the tile shows, in its order (name, length, ×2), so voice control finds it by those words
+  const label = S.addTile(name, secs(S, DEFAULT_DUR[anim]), count ? S.inCycle(count) : null, after);
   return (
     <li className="group/item @container relative min-w-0">
       <Tooltip>
@@ -99,13 +100,14 @@ function Item({ anim, look, thumb, count, full, previewing, after, S, onAdd, onP
               dangerouslySetInnerHTML={{ __html: thumb.svg }}
             />
             <span className="flex min-w-0 flex-col items-center leading-tight @min-[140px]:flex-1 @min-[140px]:items-start @min-[140px]:pr-4">
-              <span className="text-xs font-medium text-pretty text-foreground">{name}</span>
+              {/* the spaces keep the words apart in the text a voice-control user reads; a flex box does not draw them */}
+              <span className="text-xs font-medium text-pretty text-foreground">{name}</span>{' '}
               <span aria-hidden className="mt-0.5 flex items-center gap-1 font-mono text-2xs whitespace-nowrap text-foreground-subtle tabular-nums">
                 {secs(S, DEFAULT_DUR[anim])}
                 {count > 1 ? (
                   <>
-                    <span>·</span>
-                    <span>×{count}</span>
+                    {' '}
+                    <span>·</span> <span>×{count}</span>
                   </>
                 ) : null}
               </span>
