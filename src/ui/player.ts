@@ -1,6 +1,6 @@
 // The stage's clock and drawing, outside React: one requestAnimationFrame loop that
 // draws the blob into a live SVG, morphs from what was on screen when the look
-// changes, and tells the timeline where the playhead is. React only hands it the
+// changes, and tells the storyboard where the playhead is. React only hands it the
 // state, the mode and the settings (follow the cursor, hold still), and a click on
 // the stage plays the embed's reaction.
 //
@@ -8,7 +8,7 @@
 // In Animate it shows the real pose wherever the playhead is, starts paused, and
 // plays when someone asks: pressing Play is a request for motion.
 
-import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from 'blob-avatar/engine';
+import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type FrameInput, type RenderModel } from 'blob-avatar/engine';
 import { Gaze, lookTarget } from 'blob-avatar/engine/gaze';
 import { watchPointer, type Pointer } from 'blob-avatar/pointer';
 import { LiveSvg } from 'blob-avatar/render/svg';
@@ -17,9 +17,6 @@ export type Mode = 'customize' | 'animate';
 
 /** seconds a change of shape, face or color takes to morph */
 const MORPH = 0.32;
-
-/** the breath after an auditioned animation, before it comes round again */
-const AUDITION_REST = 0.9;
 
 type Listener = (t: number, length: number, playing: boolean) => void;
 
@@ -37,7 +34,6 @@ export class Player {
   private from: RenderModel | null = null;
   private fromAt = 0;
   private listeners = new Set<Listener>();
-  private watchers = new Set<() => void>();
   private extras: ((now: number) => void)[] = [];
   /** the intro drives the eyes while it runs (its first second and a half), then lets go with null */
   input: FrameInput | null = null;
@@ -47,10 +43,6 @@ export class Player {
   private eyes = new Gaze();
   /** the part of the cycle that plays over and over (a looped clip), or all of it */
   private range: [number, number] | null = null;
-  /** an animation on its own, playing in place of the cycle, and its own clock */
-  private trial: { clip: Clip; t: number } | null = null;
-  /** whether it was playing when the playhead was picked up */
-  private scrubbedFrom: boolean | null = null;
   /** when the stage was clicked (performance.now()), while the reaction plays */
   private poked = -1;
 
@@ -79,14 +71,9 @@ export class Player {
     return this.t;
   }
 
-  /** whether the cycle (or the idle loop) is moving: an audition holds it where it was */
+  /** whether the cycle (or the idle loop) is moving */
   get isPlaying() {
-    return this.playing && !this.trial && (this.mode === 'animate' || !this.holding);
-  }
-
-  /** the animation playing on its own, if any */
-  get auditioning(): Clip | null {
-    return this.trial?.clip ?? null;
+    return this.playing && (this.mode === 'animate' || !this.holding);
   }
 
   start() {
@@ -116,16 +103,6 @@ export class Player {
     return () => void this.listeners.delete(f);
   }
 
-  /** a change in what the stage is doing (an audition starting or ending), for React */
-  watch = (f: () => void) => {
-    this.watchers.add(f);
-    return () => void this.watchers.delete(f);
-  };
-
-  private changed() {
-    this.watchers.forEach((f) => f());
-  }
-
   private morph() {
     if (this.shown && !this.holding) {
       this.from = this.shown;
@@ -143,7 +120,7 @@ export class Player {
     const prev = this.state;
     // a new look or a new order of animations morphs; a clip's length changing does not
     const order = (s: BlobState) => s.cycle.map((c) => c.anim).join();
-    if (prev.shape !== next.shape || prev.color !== next.color || prev.expression !== next.expression || (!this.trial && order(prev) !== order(next))) this.morph();
+    if (prev.shape !== next.shape || prev.color !== next.color || prev.expression !== next.expression || order(prev) !== order(next)) this.morph();
     this.state = next;
     if (this.t > this.length) this.t %= this.length;
     this.redrawIfStill();
@@ -156,11 +133,6 @@ export class Player {
     this.mode = mode;
     this.t = 0;
     this.range = null;
-    this.scrubbedFrom = null;
-    if (this.trial) {
-      this.trial = null;
-      this.changed();
-    }
     // a still stage opens the cycle paused, on its first pose; Customize breathes again
     if (this.holding) this.playing = false;
     else if (mode === 'customize') this.playing = true;
@@ -172,44 +144,16 @@ export class Player {
     this.redrawIfStill(true);
   }
 
-  /** play or pause the cycle; playing it ends an audition */
+  /** play or pause the cycle */
   setPlaying(on: boolean) {
     this.playing = on;
-    this.scrubbedFrom = null;
-    if (on && this.trial) {
-      this.trial = null;
-      this.morph();
-      this.changed();
-    }
     this.redrawIfStill(true);
-  }
-
-  /** the playhead is being dragged: the cycle pauses, and plays again after if it was playing */
-  scrub(on: boolean) {
-    if (on) {
-      if (this.scrubbedFrom === null) this.scrubbedFrom = this.playing;
-      this.playing = false;
-    } else if (this.scrubbedFrom !== null) {
-      this.playing = this.scrubbedFrom;
-      this.scrubbedFrom = null;
-    }
   }
 
   /** play only [start, end) of the cycle, over and over (a looped clip); null plays all of it */
   setRange(range: [number, number] | null) {
     this.range = range && range[1] - range[0] > 0.05 ? range : null;
     if (this.range && (this.t < this.range[0] || this.t >= this.range[1])) this.seek(this.range[0]);
-  }
-
-  /** one animation on its own, over and over in place of the cycle; null goes back to the cycle */
-  audition(clip: Clip | null) {
-    const was = this.trial?.clip;
-    if (!clip && !was) return;
-    if (clip && was && clip.anim === was.anim && clip.dur === was.dur) return;
-    this.morph();
-    this.trial = clip ? { clip: { ...clip }, t: 0 } : null;
-    this.changed();
-    this.redrawIfStill(true);
   }
 
   setStill(on: boolean) {
@@ -241,9 +185,9 @@ export class Player {
     if (!this.raf || this.holding || (force && !this.playing)) this.draw(performance.now(), true);
   }
 
-  /** the stage shows the rest pose: a still stage, outside Animate and with nothing auditioned */
+  /** the stage shows the rest pose: a still stage, outside Animate */
   private get rest() {
-    return this.holding && this.mode === 'customize' && !this.trial;
+    return this.holding && this.mode === 'customize';
   }
 
   /** what drives the eyes this frame: the rest pose, the intro, the pointer, or nothing (they wander) */
@@ -269,13 +213,7 @@ export class Player {
     const r = this.poked < 0 ? POKE.dur : (now - this.poked) / 1000;
     if (r < POKE.dur) input = { ...input, react: { ...POKE, hop: !this.holding, t: this.holding ? POKE.dur / 2 : r } };
     else this.poked = -1;
-    let m: RenderModel;
-    if (this.trial) {
-      // an audition plays even on a still stage: someone asked to see it
-      const s: BlobState = { ...this.state, cycle: [this.trial.clip, { anim: 'idle', dur: AUDITION_REST }] };
-      if (!still) this.trial.t = (this.trial.t + dt) % loopLength(s);
-      m = frame(s, this.trial.t, input);
-    } else m = frame(this.playable, this.t, input);
+    let m = frame(this.playable, this.t, input);
     if (this.from) {
       const u = Math.min(1, (now - this.fromAt) / 1000 / MORPH);
       m = mixModels(this.from, m, 1 - (1 - u) ** 3);

@@ -1,5 +1,5 @@
 import { Clapperboard, SlidersHorizontal } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DEFAULT_DUR, MAX_CLIPS, loopLength, type Anim } from 'blob-avatar/engine';
 import { randomLook } from 'blob-avatar/engine/codec';
 import type { Strings } from '../i18n/strings';
@@ -7,8 +7,8 @@ import { cn } from '../lib/cn';
 import { ColeoniMark, GithubIcon } from './brand';
 import { announce, Announcer } from './animate/announce';
 import { savedName } from './animate/cycle-menu';
-import { AuditionPill, Library } from './animate/library';
-import { Timeline } from './animate/timeline';
+import { Library } from './animate/library';
+import { Storyboard } from './animate/storyboard';
 import { insertClip, starts, tellingMoment } from './cycles';
 import { cyclesOf, useEditor, type Cycles } from './editor';
 import { ExportMenu, exportOptions } from './export-menu';
@@ -18,6 +18,7 @@ import { OptionsCard } from './options-card';
 import { Player, type Mode } from './player';
 import { settings } from './prefs';
 import { bindShortcuts, type Action } from './shortcuts';
+import { SettingsMenu, ShortcutsModal } from './settings-menu';
 import { StageToolbar } from './stage-toolbar';
 import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
@@ -123,7 +124,9 @@ export function App({ S }: { S: Strings }) {
   const [looping, setLooping] = useState(false);
   const sel = selected !== null && selected < state.cycle.length ? selected : null;
   const loopOn = looping && sel !== null;
-  const auditioning = useSyncExternalStore(player.watch, () => player.auditioning);
+  // whether the cycle plays, for the dock's button (the player says so every frame)
+  const [playing, setPlaying] = useState(player.isPlaying);
+  useEffect(() => player.subscribe((_t, _L, on) => setPlaying(on)), [player]);
   const base = cyclesOf(editor, doc.book);
   const cycles: Cycles = {
     ...base,
@@ -193,37 +196,24 @@ export function App({ S }: { S: Strings }) {
     else if (hidden) toast(said, { label: S.undo, run: editor.undoLast() });
   };
 
-  const audition = (anim: Anim | null) => {
-    player.audition(anim ? { anim, dur: DEFAULT_DUR[anim] } : null);
-    if (!anim) return;
-    announce(S.previewing(S.anims[anim]));
-    // on a phone the library sits below the fold: the stage comes into view to show it
-    const stage = document.getElementById('stage');
-    const r = stage?.getBoundingClientRect();
-    if (stage && r && (r.top < 0 || r.bottom > innerHeight)) stage.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-  };
-
   const loop = (on: boolean) => {
     setLooping(on);
     // looping is a request to see it move
     if (on) player.setPlaying(true);
   };
 
-  // Escape stops an audition first, then lets go of the selected clip
-  const escape = useRef(() => {});
+  // Escape lets go of the picked clip (a modal or a menu takes its own Escape)
+  const escape = useRef<() => boolean>(() => false);
   escape.current = () => {
-    if (player.auditioning) return player.audition(null), true;
     if (mode !== 'animate' || sel === null) return false;
-    const inBar = !!document.activeElement?.closest('[data-inspector]');
     setSelected(null);
     setLooping(false);
-    // the bar empties: the focus goes back to the track rather than to nowhere
-    if (inBar) requestAnimationFrame(() => document.getElementById(`clip-${sel}`)?.focus());
     return true;
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented && escape.current()) e.preventDefault();
+      if (e.key !== 'Escape' || e.defaultPrevented || (e.target instanceof Element && e.target.closest('[role="dialog"]'))) return;
+      if (escape.current()) e.preventDefault();
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
@@ -248,8 +238,8 @@ export function App({ S }: { S: Strings }) {
       redo: editor.redo,
       play: mode === 'animate' ? () => player.setPlaying(!player.isPlaying) : undefined,
       help: () => {
+        setSettingsOpen(false);
         setKeysOpen(true);
-        setSettingsOpen(true);
       },
     };
   });
@@ -297,6 +287,7 @@ export function App({ S }: { S: Strings }) {
           end={
             <>
               <div data-intro="translateY(-6px)" className="flex items-center gap-0.5 sm:gap-1">
+                <SettingsMenu S={S} open={settingsOpen} onOpenChange={setSettingsOpen} onShortcuts={() => setKeysOpen(true)} />
                 <ThemeToggle S={S} />
                 <LanguageMenu S={S} />
                 <GithubLink S={S} />
@@ -309,44 +300,33 @@ export function App({ S }: { S: Strings }) {
         />
         <main id="conteudo" tabIndex={-1} className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 outline-none md:flex-row md:gap-4 md:px-5 md:pb-0">
           <h1 className="sr-only">{S.h1}</h1>
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3">
-            {/* on a phone the tools sit right under the stage; from md up, in the column's corner */}
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4 md:py-0">
-              <div className="relative flex justify-center">
-                <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} reacts={prefs.react} />
-                {mode === 'animate' && auditioning ? (
-                  // over the top of the stage on a phone (its tools sit right under it), under the blob from md up
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center md:top-auto md:-bottom-1">
-                    <AuditionPill anim={auditioning.anim} full={state.cycle.length >= MAX_CLIPS} S={S} onAdd={() => (add(auditioning.anim), audition(null))} onStop={() => audition(null)} />
-                  </div>
-                ) : null}
-              </div>
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 md:pb-3">
+            {/* the tools sit in a dock right under the blob */}
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-4 md:py-0">
+              <Stage player={player} label={S.stageLabel(describe(state, S))} small={mode === 'animate'} backdrop={prefs.showBg ? exportOptions(prefs) : null} reacts={prefs.react} />
               <StageToolbar
-              S={S}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onRandomize={randomize}
-              onUndo={editor.undo}
-              onRedo={editor.redo}
-              settingsOpen={settingsOpen}
-              onSettingsOpen={setSettingsOpen}
-              keysOpen={keysOpen}
-              onKeysOpen={setKeysOpen}
-              className="max-md:-mt-2 md:absolute md:top-2 md:right-0 md:z-10"
+                S={S}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onRandomize={randomize}
+                onUndo={editor.undo}
+                onRedo={editor.redo}
+                play={mode === 'animate' ? { playing, onToggle: () => player.setPlaying(!player.isPlaying) } : null}
+                className="relative z-10 max-md:-mt-2 md:-mt-12"
               />
             </div>
             {mode === 'animate' ? (
-              <Timeline state={state} cycles={cycles} player={player} S={S} selected={sel} onSelect={setSelected} looping={loopOn} onLoop={loop} className="w-full animate-rise-in md:mb-1" />
+              <Storyboard state={state} cycles={cycles} player={player} S={S} selected={sel} onSelect={setSelected} looping={loopOn} onLoop={loop} className="animate-rise-in" />
             ) : null}
           </div>
-          <div data-intro="translateX(16px)" className="md:w-[22rem] md:shrink-0 md:pt-2">
+          <div data-intro="translateX(16px)" className="md:w-[22rem] md:shrink-0 md:pt-2 md:pb-3">
             <OptionsCard
               state={state}
               edit={edit}
               mode={mode}
               S={S}
               className="md:max-h-full md:overflow-y-auto"
-              library={<Library look={state} clips={state.cycle} previewing={auditioning?.anim ?? null} after={sel !== null ? S.anims[state.cycle[sel].anim] : null} S={S} onAdd={add} onPreview={audition} />}
+              library={<Library look={state} clips={state.cycle} after={sel !== null ? S.anims[state.cycle[sel].anim] : null} S={S} onAdd={add} />}
             />
           </div>
         </main>
@@ -380,6 +360,7 @@ export function App({ S }: { S: Strings }) {
           </a>
         </footer>
       </div>
+      <ShortcutsModal S={S} open={keysOpen} onOpenChange={setKeysOpen} />
       <Toaster />
       <Announcer />
     </TooltipProvider>

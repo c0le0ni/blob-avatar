@@ -154,11 +154,8 @@ export function CycleMenu({ cycles, S, className }: { cycles: Cycles; S: Strings
     >
       <PopoverTrigger asChild>
         <Button variant="ghost" className={cn('h-8 min-w-0 gap-1.5 px-2 touch:h-10', className)}>
-          <span className="text-foreground-subtle max-sm:sr-only">{S.cycle}</span>
-          <span aria-hidden className="-mx-0.5 text-foreground-subtle max-sm:hidden">
-            ·
-          </span>
-          <span className="min-w-0 truncate text-foreground">{name}</span>
+          <span className="sr-only">{S.cycle}: </span>
+          <span className="min-w-0 truncate text-sm text-foreground">{name}</span>
           <ChevronDown aria-hidden className={cn('size-3.5! text-foreground-subtle transition-transform duration-(--motion-normal) ease-out-expo', open && 'rotate-180')} />
         </Button>
       </PopoverTrigger>
@@ -166,7 +163,7 @@ export function CycleMenu({ cycles, S, className }: { cycles: Cycles; S: Strings
         ref={content}
         role="dialog"
         aria-label={S.cycles}
-        align="end"
+        align="start"
         collisionPadding={8}
         className="flex max-h-[min(72vh,34rem)] w-80 max-w-[calc(100vw-1rem)] flex-col overflow-y-auto overscroll-contain p-1"
         onKeyDown={moveFocus}

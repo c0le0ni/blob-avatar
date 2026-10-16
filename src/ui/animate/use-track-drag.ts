@@ -1,12 +1,10 @@
-// The track's gestures. A mouse picks a clip up as soon as it moves; a finger
-// scrolls the track, and picks a clip up after holding still for 350 ms or from its
-// grip. The right edge of the selected clip stretches it in tenths of a second.
-// Near an edge the track scrolls by itself while something is held.
+// The storyboard's drag. A mouse picks a card up as soon as it moves; a finger
+// scrolls the row, and picks a card up after holding still for 350 ms. Near an edge
+// the row scrolls by itself while a card is held. The geometry is the track's: each
+// card is one unit of `pps` pixels.
 
 import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react';
-import { clampDur } from '../cycles';
-import { gestureKey } from '../history';
 import { dropIndex, edgeSpeed, tOf } from './layout';
 
 /** a finger held this long on a clip picks it up */
@@ -19,11 +17,6 @@ export interface Drag {
   dx: number;
 }
 
-export interface Resize {
-  i: number;
-  dur: number;
-}
-
 interface Options {
   scroller: RefObject<HTMLDivElement | null>;
   durs: number[];
@@ -34,15 +27,10 @@ interface Options {
   /** a clip is picked up */
   onLift: (i: number) => void;
   onDrop: (from: number, to: number) => void;
-  /** every step of a stretch; the key makes the whole stretch one undo step */
-  onResize: (i: number, dur: number, key: string) => void;
-  /** a stretch begins (true) and ends (false): the scale holds still meanwhile */
-  onResizing: (on: boolean) => void;
 }
 
 export function useTrackDrag(o: Options) {
   const [drag, setDrag] = useState<Drag | null>(null);
-  const [resize, setResize] = useState<Resize | null>(null);
   // the handlers outlive a render: they read the latest values from here
   const live = useRef(o);
   live.current = o;
@@ -94,12 +82,11 @@ export function useTrackDrag(o: Options) {
     raf = requestAnimationFrame(tick);
   }
 
-  /** press on a clip, or on its grip (which picks it up at once, even under a finger) */
-  function onClipDown(e: ReactPointerEvent<HTMLElement>, i: number, grip = false) {
+  /** press on a card */
+  function onClipDown(e: ReactPointerEvent<HTMLElement>, i: number) {
     if (e.button !== 0 || !live.current.scroller.current) return;
-    if (grip) e.stopPropagation();
     const touch = e.pointerType === 'touch';
-    const now = grip || !touch;
+    const now = !touch;
     const id = e.pointerId;
     const x0 = e.clientX;
     const y0 = e.clientY;
@@ -151,34 +138,7 @@ export function useTrackDrag(o: Options) {
     addEventListener('pointermove', pending);
     addEventListener('pointerup', settle);
     addEventListener('pointercancel', settle);
-    if (grip) lift();
   }
 
-  /** press on the right edge of the selected clip: stretch it */
-  function onEdgeDown(e: ReactPointerEvent<HTMLElement>, i: number) {
-    if (e.button !== 0 || !live.current.scroller.current) return;
-    e.stopPropagation();
-    e.preventDefault();
-    const start = contentX(e.clientX);
-    const d0 = live.current.durs[i];
-    // the scale is held for the whole stretch, so the edge stays under the pointer
-    const pps = live.current.pps;
-    const key = gestureKey('resize');
-    live.current.onResizing(true);
-    setResize({ i, dur: d0 });
-    follow(
-      e.pointerId,
-      (clientX) => {
-        const dur = clampDur(d0 + (contentX(clientX) - start) / pps);
-        setResize({ i, dur });
-        live.current.onResize(i, dur, key);
-      },
-      () => {
-        setResize(null);
-        live.current.onResizing(false);
-      },
-    );
-  }
-
-  return { drag, resize, onClipDown, onEdgeDown };
+  return { drag, onClipDown };
 }

@@ -27,7 +27,7 @@ export function actionFor(e: KeyLike): Action | null {
   return e.key === '?' ? 'help' : null;
 }
 
-/** the focus is where keys mean something else: a field being typed in, or an open popover (the timeline's track is not one) */
+/** the focus is where keys mean something else: a field being typed in, or an open popover or modal (the storyboard's row is not one) */
 function busy(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
   return !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-radix-popper-content-wrapper], [role="dialog"], [role="menu"], [role="listbox"]:not([data-track])');
@@ -69,8 +69,8 @@ export function keysFor(action: Action, S: Strings): string[][] {
   }
 }
 
-/** the keys of the timeline's track (handled there, listed with the rest) */
-export const TRACK_KEYS = ['pick', 'move', 'stretch', 'duplicate', 'loop', 'remove', 'playFrom', 'escape'] as const;
+/** the keys of the storyboard's cards (handled there, listed with the rest) */
+export const TRACK_KEYS = ['pick', 'open', 'move', 'stretch', 'duplicate', 'loop', 'remove', 'escape'] as const;
 export type TrackKey = (typeof TRACK_KEYS)[number];
 
 export function trackKeysFor(key: TrackKey): string[] {
@@ -89,7 +89,7 @@ export function trackKeysFor(key: TrackKey): string[] {
       return ['L'];
     case 'remove':
       return [MAC ? '⌫' : 'Delete'];
-    case 'playFrom':
+    case 'open':
       return [MAC ? '↩' : 'Enter'];
     case 'escape':
       return ['Esc'];

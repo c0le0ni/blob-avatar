@@ -24,7 +24,11 @@ export function useTheme() {
     setTheme(p);
     themeStore.emit();
   }, []);
-  const toggle = useCallback(() => setPref(resolved() === 'light' ? 'dark' : 'light'), [setPref]);
+  // back to the device's own theme, the page follows the device again
+  const toggle = useCallback(() => {
+    const next = resolved() === 'light' ? 'dark' : 'light';
+    setPref(next === resolved('system') ? 'system' : next);
+  }, [setPref]);
   return { theme, toggle, pref, setPref };
 }
 
