@@ -30,6 +30,9 @@ function Stage({ player, label, small, backdrop, reacts }: { player: Player; lab
   const host = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = host.current!;
+    // redrawn every frame: the screen recorder (rr-block) keeps only its box, or a
+    // minute of the editor would weigh tens of megabytes
+    player.svg.el.classList.add('rr-block');
     el.appendChild(player.svg.el);
     player.start();
     return () => {

@@ -32,6 +32,8 @@ function useHoverPlay(look: BlobState, anim: Anim, thumb: { svg: string; view: s
     live.el.setAttribute('width', '100%');
     live.el.setAttribute('height', '100%');
     live.el.style.overflow = 'hidden';
+    // played every frame: the screen recorder keeps only its box (rr-block)
+    live.el.classList.add('rr-block');
     const s = animLook(look, anim);
     const L = DEFAULT_DUR[anim] + 0.9;
     const from = thumb.view.split(' ').map(Number);

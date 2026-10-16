@@ -46,8 +46,9 @@ function page(S: Strings): string {
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Contador de visitas, sem cookie (docs/28 do coleoni_digital). -->
+    <!-- Contador de visitas, sem cookie, e gravação da tela com os campos digitados cobertos (docs/28 do coleoni_digital). -->
     <script defer src="https://visitas.coleoni.com/v.js" data-website-id="7149670d-01ef-4444-88ab-815bc174760c" data-domains="blob.coleoni.com"></script>
+    <script defer src="https://visitas.coleoni.com/recorder.js" data-website-id="7149670d-01ef-4444-88ab-815bc174760c"></script>
   </head>
   <body>
     <!-- the heading is there before the script runs; the app then draws it inside its <main> -->
