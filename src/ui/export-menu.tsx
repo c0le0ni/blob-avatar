@@ -6,6 +6,7 @@ import { toHash } from 'blob-avatar/engine/codec';
 import { copyPng, copySvg, downloadAnimatedSvg, downloadGif, downloadPng, downloadSvg, type ExportOptions } from '../export';
 import type { Strings } from '../i18n/strings';
 import { cn } from '../lib/cn';
+import { count, type Counted } from '../lib/count';
 import { GIF_LONG, gifFrames, secs } from './animate/format';
 import { ColorPicker } from './color-picker';
 import { toast } from './hooks';
@@ -48,14 +49,17 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
   // the animated formats take the cycle while animating, the idle loop otherwise
   const moving: BlobState = mode === 'animate' ? state : { ...state, cycle: IDLE_CYCLE };
 
-  async function run(id: string, work: () => unknown, done?: string) {
+  async function run(id: Counted, work: () => unknown, done?: string) {
     if (busy) return;
     setBusy(id);
     setProgress(0);
     try {
       const ok = await work();
       if (ok === false) toast(S.copyFailed);
-      else if (done) toast(done);
+      else {
+        count(id);
+        if (done) toast(done);
+      }
     } catch {
       toast(S.copyFailed);
     } finally {

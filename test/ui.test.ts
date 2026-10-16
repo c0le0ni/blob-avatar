@@ -3,6 +3,7 @@ import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from 'bl
 import { hexToHsv, hsvToHex, normalizeHex } from '../src/ui/color';
 import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts, tellingMoment } from '../src/ui/cycles';
 import { FULL_VIEW, animThumb, embedCode } from '../src/ui/site';
+import { EVENTS, count } from '../src/lib/count';
 
 describe('color picker', () => {
   it('reads typed colors in every usual spelling and refuses the rest', () => {
@@ -128,5 +129,24 @@ describe('embed code', () => {
     expect(on.endsWith(' size="160" reaction></blob-avatar>')).toBe(true);
     expect(on.replace(' reaction', '')).toBe(off);
     expect(embedCode(s, { gaze: true, reaction: true }).endsWith(' size="160" gaze reaction></blob-avatar>')).toBe(true);
+  });
+});
+
+describe('export counting', () => {
+  it('names each export for the counter, and stays quiet without one', () => {
+    const seen: string[] = [];
+    const g = globalThis as { umami?: { track(name: string): void } };
+    count('gif');
+    g.umami = { track: (name) => seen.push(name) };
+    try {
+      count('gif');
+      count('embed');
+      g.umami = { track: () => { throw new Error('blocked'); } };
+      expect(() => count('png')).not.toThrow();
+    } finally {
+      delete g.umami;
+    }
+    expect(seen).toEqual(['export-gif', 'copy-embed']);
+    expect(new Set(Object.values(EVENTS)).size).toBe(Object.keys(EVENTS).length);
   });
 });
