@@ -3,7 +3,8 @@ import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from 'bl
 import { hexToHsv, hsvToHex, normalizeHex } from '../src/ui/color';
 import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts, tellingMoment } from '../src/ui/cycles';
 import { FULL_VIEW, animThumb, embedCode } from '../src/ui/site';
-import { EVENTS, count } from '../src/lib/count';
+import { EVENTS, count, oneViewPerVisit } from '../src/lib/count';
+import { STAGE_CLASS, stillRule } from '../src/ui/recording';
 
 describe('color picker', () => {
   it('reads typed colors in every usual spelling and refuses the rest', () => {
@@ -133,20 +134,41 @@ describe('embed code', () => {
 });
 
 describe('export counting', () => {
-  it('names each export for the counter, and stays quiet without one', () => {
-    const seen: string[] = [];
-    const g = globalThis as { umami?: { track(name: string): void } };
+  it('names each export for the counter, with its blob, and stays quiet without one', () => {
+    const seen: [string, unknown][] = [];
+    const g = globalThis as { umami?: { track(name: string, data?: unknown): void } };
     count('gif');
-    g.umami = { track: (name) => seen.push(name) };
+    g.umami = { track: (name, data) => seen.push([name, data]) };
     try {
-      count('gif');
+      count('gif', 'v=2&shape=circle');
       count('embed');
+      count('png', 'x'.repeat(600));
       g.umami = { track: () => { throw new Error('blocked'); } };
       expect(() => count('png')).not.toThrow();
     } finally {
       delete g.umami;
     }
-    expect(seen).toEqual(['export-gif', 'copy-embed']);
+    expect(seen.slice(0, 2)).toEqual([['export-gif', { blob: 'v=2&shape=circle' }], ['copy-embed', undefined]]);
+    expect((seen[2][1] as { blob: string }).blob).toHaveLength(500);
     expect(new Set(Object.values(EVENTS)).size).toBe(Object.keys(EVENTS).length);
+  });
+
+  it('lets one page view through per visit, and every event', () => {
+    const send = oneViewPerVisit();
+    const view = { url: '/' };
+    expect(send('event', view)).toBe(view);
+    expect(send('event', { url: '/#v=2' })).toBeNull();
+    const event = { url: '/#v=2', name: 'export-gif' };
+    expect(send('event', event)).toBe(event);
+    expect(send('performance', view)).toBe(view);
+  });
+});
+
+describe('recording still', () => {
+  it('paints only the empty stage box, with the blob at rest', () => {
+    const rule = stillRule(cloneState(DEFAULT_STATE));
+    expect(rule.startsWith(`.${STAGE_CLASS}.rr-block:empty{background:url("data:image/svg+xml,`)).toBe(true);
+    expect(decodeURIComponent(rule)).toContain('<svg');
+    expect(rule).not.toMatch(/NaN|undefined/);
   });
 });

@@ -4,10 +4,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { stringsFor } from './i18n/strings';
+import { installCounter } from './lib/count';
 import { App } from './ui/app';
 import './styles.css';
 
 const S = stringsFor(document.documentElement.lang);
+installCounter();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

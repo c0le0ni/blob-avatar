@@ -57,7 +57,7 @@ export function ExportMenu({ state, mode, S }: { state: BlobState; mode: Mode; S
       const ok = await work();
       if (ok === false) toast(S.copyFailed);
       else {
-        count(id);
+        count(id, toHash(state));
         if (done) toast(done);
       }
     } catch {
