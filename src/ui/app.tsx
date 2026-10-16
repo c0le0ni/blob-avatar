@@ -22,6 +22,7 @@ import { StageToolbar } from './stage-toolbar';
 import { Button } from './primitives/button';
 import { Segmented } from './primitives/segmented';
 import { TooltipProvider } from './primitives/tooltip';
+import { STAGE_CLASS, useRecordingStill } from './recording';
 import { coleoniHome, describe, REPO, SKILLS, LOADERS } from './site';
 import { GithubLink, LanguageMenu, ThemeToggle, TopBar } from './top-bar';
 
@@ -31,8 +32,9 @@ function Stage({ player, label, small, backdrop, reacts }: { player: Player; lab
   useLayoutEffect(() => {
     const el = host.current!;
     // redrawn every frame: the screen recorder (rr-block) keeps only its box, or a
-    // minute of the editor would weigh tens of megabytes
-    player.svg.el.classList.add('rr-block');
+    // minute of the editor would weigh tens of megabytes; recording.ts paints the
+    // blob at rest in that box
+    player.svg.el.classList.add('rr-block', STAGE_CLASS);
     el.appendChild(player.svg.el);
     player.start();
     return () => {
@@ -115,6 +117,7 @@ export function App({ S }: { S: Strings }) {
   const prefs = settings.use();
   const [mode, setMode] = useState<Mode>('customize');
   const [player] = useState(() => new Player(state, prefs.still));
+  useRecordingStill(state);
   // the clip picked on the track, and whether it plays over and over
   const [selected, setSelected] = useState<number | null>(null);
   const [looping, setLooping] = useState(false);

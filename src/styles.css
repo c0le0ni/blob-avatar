@@ -281,3 +281,18 @@
   background-image: conic-gradient(var(--pulse-hover) 25%, transparent 0 50%, var(--pulse-hover) 0 75%, transparent 0);
   background-size: 16px 16px;
 }
+
+/* Screen recordings (Umami): what redraws every frame carries rr-block and is
+   recorded as an empty box, which the player paints grey. These rules match only
+   that empty box, never the live page (its elements always have children): the
+   stage gets the blob at rest (a rule written by useRecordingStill), the wordmark
+   its static file, anything else stays clear. */
+.rr-block:empty {
+  background: none;
+}
+.blob-wordmark.rr-block:empty {
+  background: url('/brand/blob.svg') left center / contain no-repeat;
+}
+[data-theme='light'] .blob-wordmark.rr-block:empty {
+  background-image: url('/brand/blob-dark.svg');
+}
