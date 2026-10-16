@@ -9,7 +9,8 @@
 // plays when someone asks: pressing Play is a request for motion.
 
 import { IDLE_CYCLE, POKE, frame, loopLength, mixModels, type BlobState, type Clip, type FrameInput, type RenderModel } from 'blob-avatar/engine';
-import { gazeTarget, springGaze, type Gaze } from 'blob-avatar/engine/gaze';
+import { Gaze, lookTarget } from 'blob-avatar/engine/gaze';
+import { watchPointer, type Pointer } from 'blob-avatar/pointer';
 import { LiveSvg } from 'blob-avatar/render/svg';
 
 export type Mode = 'customize' | 'animate';
@@ -42,8 +43,8 @@ export class Player {
   input: FrameInput | null = null;
   private holding: boolean;
   private follow = false;
-  private pointer: [number, number] | null = null;
-  private gaze: Gaze = [0, 0, 0, 0];
+  private pointer: Pointer | null = null;
+  private eyes = new Gaze();
   /** the part of the cycle that plays over and over (a looped clip), or all of it */
   private range: [number, number] | null = null;
   /** an animation on its own, playing in place of the cycle, and its own clock */
@@ -225,28 +226,13 @@ export class Player {
     if (this.poked < 0) this.poked = performance.now();
   }
 
-  private onMove = (e: PointerEvent) => {
-    this.pointer = [e.clientX, e.clientY];
-  };
-
-  private onOut = (e: PointerEvent) => {
-    // the pointer left the page: the eyes go back to wandering
-    if (e.relatedTarget || !this.pointer) return;
-    this.pointer = null;
-    this.morph();
-  };
-
-  /** the eyes follow the pointer, as the embed does with its gaze attribute */
+  /** the eyes follow the pointer, as the embed does with its gaze attribute; turned off, they hand back to wandering */
   setFollow(on: boolean) {
     if (on === this.follow) return;
     this.follow = on;
-    if (on) {
-      addEventListener('pointermove', this.onMove, { passive: true });
-      addEventListener('pointerout', this.onOut);
-    } else {
-      removeEventListener('pointermove', this.onMove);
-      removeEventListener('pointerout', this.onOut);
-      if (this.pointer) this.morph();
+    if (on) this.pointer = watchPointer();
+    else {
+      this.pointer?.stop();
       this.pointer = null;
     }
   }
@@ -263,13 +249,12 @@ export class Player {
   /** what drives the eyes this frame: the rest pose, the intro, the pointer, or nothing (they wander) */
   private inputAt(dt: number): FrameInput {
     if (this.rest) return { still: true };
+    // the embed's eyes, on the stage's box; under the intro they wait, and come in from wandering after
+    const at = this.input ? null : this.pointer?.at();
+    const box = at && this.svg.el.getBoundingClientRect();
+    const look = this.eyes.step(at && box && box.width ? lookTarget(at[0], at[1], box) : null, dt);
     if (this.input) return this.input;
-    if (!this.follow || !this.pointer) return {};
-    // normalized to the stage, and eased on the embed's spring
-    const r = this.svg.el.getBoundingClientRect();
-    if (!r.width) return {};
-    this.gaze = springGaze(this.gaze, gazeTarget(this.pointer[0], this.pointer[1], r, r.width, r.height), dt);
-    return { gaze: [this.gaze[0], this.gaze[1]] };
+    return look ? { look, open: this.eyes.open } : {};
   }
 
   private draw(now: number, still = false) {

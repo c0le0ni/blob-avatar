@@ -111,6 +111,23 @@ export function turnEye(p: EyePose, yaw: number, pitch: number): { pose: EyePose
 type V = [number, number, number];
 
 /**
+ * The turn (yaw, pitch, as turnEye takes them) that carries a spot on the sphere,
+ * seen at (x, y), to (tx, ty): the yaw slides it across to tx, then the pitch up or
+ * down to ty. Exact for a spot on the surface; the targets stay inside the circle.
+ */
+export function turnTo(x: number, y: number, tx: number, ty: number): [number, number] {
+  const z = Math.sqrt(Math.max(0.0225, 1 - x * x - y * y));
+  const across = Math.hypot(x, z);
+  const yaw = Math.asin(clamp(tx / across, -1, 1)) - Math.atan2(x, z);
+  const z1 = Math.sqrt(Math.max(0, across * across - tx * tx));
+  const pitch = Math.asin(clamp(ty / Math.hypot(y, z1), -1, 1)) - Math.atan2(y, z1);
+  return [yaw, pitch];
+}
+
+/** where a face looks: the point between its eyes */
+export const faceCenter = (f: Face): [number, number] => [(f.left.x + f.right.x) / 2, (f.left.y + f.right.y) / 2];
+
+/**
  * The outline of one eye, in body radii: the capsule, squeezed along its own
  * height by `open` (1 open, a blink goes down to about 0.43), through the pose's
  * matrix, at (cx, cy).

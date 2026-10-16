@@ -4,7 +4,7 @@
 import { clipPose, PART_SLOTS, TRAIL_POINTS, TRAIL_SLOTS, type Anim } from './animations';
 import { autoEyeColor, mixHex } from './color';
 import { blend, clone, make, size, type Contour, type Pt } from './contour';
-import { blendFace, eyeOutline, FACES, turnEye, type EyePose } from './face';
+import { blendFace, eyeOutline, faceCenter, FACES, turnEye, turnTo, type EyePose } from './face';
 import { disc, EYE_POINTS } from './glyphs';
 import { clamp, lerp, smooth } from './math';
 import { blink, breath, mixMotion, sequenceAt, toMotion, wander } from './motion';
@@ -47,8 +47,10 @@ export interface RenderModel {
 }
 
 export interface FrameInput {
-  /** where the eyes look, -1..1 (the pointer); null lets the head wander by itself */
+  /** a turn of the head, -1..1 on each axis, held in place of its wandering (the intro, the library's tiles) */
   gaze?: [number, number] | null;
+  /** the eyes on a point (gaze.ts): the spot they look at, inside the unit circle, and how much it takes over from the head's wandering (or gaze), 0..1 */
+  look?: { x: number; y: number; w: number } | null;
   /** the rest pose, eyes open: still pictures and reduced motion */
   still?: boolean;
   /** how open the eyes are, 0..1, on top of the blinks (the intro opens them) */
@@ -89,6 +91,11 @@ interface Fitted {
   y: number;
   alpha: number;
 }
+
+/** how far the eyes go to look at a point, in body radii from the center, across and up or down */
+const LOOK_X = 0.48, LOOK_Y = 0.44;
+/** how much of its own direction an expression keeps while it looks at a point */
+const OWN = 0.12;
 
 /** the space kept between the eyes, in body radii */
 const EYE_GAP = 0.03;
@@ -190,8 +197,17 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
   // ---------------------------------------------------------------- eyes
   let face = FACES[state.expression];
   for (const { expr, w } of m.exprs) if (w > 0.001) face = blendFace(face, FACES[expr], w);
+  // where the expression looks; an animation's own eyes move on from there
+  const own = faceCenter(face);
   for (const { face: f, w } of m.faces) if (w > 0.001) face = blendFace(face, f, Math.min(1, w));
-  const [wy, wp] = still ? [0, 0] : input.gaze ? [input.gaze[0] * 0.32, input.gaze[1] * 0.26] : wander(t, state.seed, L);
+  let [wy, wp] = still ? [0, 0] : input.gaze ? [input.gaze[0] * 0.32, input.gaze[1] * 0.26] : wander(t, state.seed, L);
+  // looking at a point turns the head so the eyes meet the spot, whatever way the expression looked
+  const look = still ? null : input.look;
+  if (look && look.w > 0) {
+    const [ly, lp] = turnTo(own[0], own[1], lerp(LOOK_X * look.x, own[0], OWN), lerp(LOOK_Y * look.y, own[1], OWN));
+    const w = clamp(look.w, 0, 1);
+    [wy, wp] = [lerp(wy, ly, w), lerp(wp, lp, w)];
+  }
   const yaw = wy + m.yaw, pitch = wp + m.pitch;
   const open = (still ? 1 : blink(t, state.seed, L)) * (1 - clamp(m.shut, 0, 1)) * clamp(input.open ?? 1, 0, 1);
   const eyeFill = autoEyeColor(state.color);

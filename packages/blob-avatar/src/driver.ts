@@ -5,7 +5,8 @@
 
 import { DEFAULT_STATE, POKE, frame, loopLength, type BlobState, type FrameInput, type Reaction } from './engine';
 import { parseCycle } from './engine/codec';
-import { gazeTarget, springGaze, type Gaze } from './engine/gaze';
+import { Gaze, lookTarget, type Look } from './engine/gaze';
+import { watchPointer, type Pointer } from './pointer';
 import type { LiveSvg } from './render/svg';
 
 export interface Options {
@@ -49,8 +50,8 @@ interface Live {
 const live = new Map<Element, Live>();
 let running = false;
 let last = 0;
-let pointer: [number, number] | null = null;
-let pointerNear = false;
+/** the pointer, watched once the first avatar follows it */
+let pointer: Pointer | null = null;
 
 function loop(now: number) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -78,21 +79,6 @@ const watcher = typeof IntersectionObserver === 'function'
     })
   : null;
 
-let listening = false;
-function listen() {
-  if (listening) return;
-  listening = true;
-  addEventListener('pointermove', (e: PointerEvent) => {
-    pointer = [e.clientX, e.clientY];
-    pointerNear = true;
-    wake();
-  }, { passive: true });
-  document.addEventListener('pointerleave', () => {
-    pointer = null;
-    pointerNear = false;
-  });
-}
-
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', wake);
 
 // ---------------------------------------------------------------- one avatar
@@ -100,13 +86,14 @@ if (typeof document !== 'undefined') document.addEventListener('visibilitychange
 export function drive(host: HTMLElement, svg: LiveSvg): Driver {
   let o: Options = { state: DEFAULT_STATE, gaze: false, paused: false, reaction: null };
   let t = 0;
-  let gaze: Gaze = [0, 0, 0, 0];
+  const eyes = new Gaze();
+  let look: Look | null = null;
   /** the reaction playing and how far in it is, in seconds */
   let now: { re: Reaction; r: number } | null = null;
   const still = () => o.paused || reduced();
   const draw = () => {
     const s = still();
-    const input: FrameInput = s ? { still: s } : pointerNear && o.gaze ? { gaze: [gaze[0], gaze[1]] } : {};
+    const input: FrameInput = s ? { still: s } : look ? { look, open: eyes.open } : {};
     // a still avatar holds the middle of the reaction
     if (now) input.react = { ...now.re, t: s ? now.re.dur / 2 : now.r };
     svg.update(frame(o.state, t, input));
@@ -117,8 +104,9 @@ export function drive(host: HTMLElement, svg: LiveSvg): Driver {
     step(dt) {
       if (still() || !me.seen || document.hidden) return false;
       t = (t + dt) % (loopLength(o.state) || 2.4);
-      // the eyes ease toward the cursor on a spring
-      if (pointer && o.gaze) gaze = springGaze(gaze, gazeTarget(pointer[0], pointer[1], host.getBoundingClientRect(), innerWidth * 0.4, innerHeight * 0.4), dt);
+      // the eyes go to the pointer on their spring, and back to wandering when it goes
+      const at = o.gaze ? pointer?.at() : null;
+      look = eyes.step(at ? lookTarget(at[0], at[1], host.getBoundingClientRect()) : null, dt);
       // the cycle runs on under the reaction
       if (now && (now.r += dt) >= now.re.dur) now = null;
       draw();
@@ -147,7 +135,7 @@ export function drive(host: HTMLElement, svg: LiveSvg): Driver {
   return {
     set(p) {
       o = { ...o, ...p };
-      if (o.gaze) listen();
+      if (o.gaze && !pointer) pointer = watchPointer(window, wake);
       // only an avatar that reacts listens for clicks (the same listener twice is one)
       if (o.reaction) {
         host.addEventListener('click', click);

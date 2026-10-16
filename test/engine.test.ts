@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from 'blob-avatar/engine';
+import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, RADIUS, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from 'blob-avatar/engine';
 import { fromHash, fromParams, randomLook, randomState, toHash } from 'blob-avatar/engine/codec';
-import { springGaze, type Gaze } from 'blob-avatar/engine/gaze';
+import { Gaze, lookTarget } from 'blob-avatar/engine/gaze';
 import { bounds, polygonArea, resample, type Contour, type Pt } from 'blob-avatar/engine/contour';
 import { shapeContour } from 'blob-avatar/engine/shapes';
 import { toSvgString } from 'blob-avatar/render/svg';
@@ -184,11 +184,125 @@ describe('random look', () => {
 });
 
 describe('gaze', () => {
-  it('eases the eyes onto the target and stays there', () => {
-    let g: Gaze = [0, 0, 0, 0];
-    for (let i = 0; i < 120; i++) g = springGaze(g, [0.8, -0.5], 1 / 60);
-    expect(g[0]).toBeCloseTo(0.8, 2);
-    expect(g[1]).toBeCloseTo(-0.5, 2);
+  const box = { left: 100, top: 50, width: 400, height: 400 };
+  const mid = (m: RenderModel): [number, number] => {
+    const c = (e: { c: Contour }) => [e.c.x.reduce((a, v) => a + v, 0) / e.c.x.length, e.c.y.reduce((a, v) => a + v, 0) / e.c.y.length];
+    const [l, r] = m.eyes.map(c);
+    return [(l[0] + r[0]) / 2, (l[1] + r[1]) / 2];
+  };
+  /** runs the eyes for some seconds at 60 fps, each frame's look kept */
+  const run = (g: Gaze, target: [number, number] | null, seconds: number) => Array.from({ length: Math.round(seconds * 60) }, () => g.step(target, 1 / 60));
+
+  it('looks the way the point is, straight ahead when it is on the blob, and never past the rim however far it goes', () => {
+    expect(lookTarget(300, 250, box)).toEqual([0, 0]);
+    const [x, y] = lookTarget(300 + 300, 250 - 400, box);
+    expect(Math.atan2(y, x)).toBeCloseTo(Math.atan2(-400, 300), 6);
+    let before = 0;
+    for (const d of [10, 60, 150, 400, 1200, 1e5]) {
+      const r = Math.hypot(...lookTarget(300 + d, 250, box));
+      expect(r).toBeGreaterThan(before);
+      expect(r).toBeLessThanOrEqual(1);
+      before = r;
+    }
+    // on the blob's edge it is a look, not a stare at the rim; two bodies away, most of the way
+    expect(Math.hypot(...lookTarget(300 + 124, 250, box))).toBeLessThan(0.5);
+    expect(Math.hypot(...lookTarget(300 + 500, 250, box))).toBeGreaterThan(0.75);
+    // a small avatar turns over a hand's width, not a whole screen
+    expect(Math.hypot(...lookTarget(130 + 200, 30, { left: 100, top: 0, width: 60, height: 60 }))).toBeGreaterThan(0.9);
+  });
+
+  it('carries the eyes to the spot on a spring with a little give: they lag, pass it a touch and settle', () => {
+    const g = new Gaze();
+    // the point moves on a little every frame, so the eyes give it their full attention (no darts)
+    const looks = Array.from({ length: 50 }, (_, i) => g.step([0.8, i * 0.005], 1 / 60));
+    expect(looks[0]!.w).toBeLessThan(0.1);
+    const xs = looks.map((l) => l!.x);
+    expect(xs[5]).toBeLessThan(0.6);
+    const peak = Math.max(...xs);
+    expect(peak).toBeGreaterThan(0.8);
+    expect(peak).toBeLessThan(0.8 * 1.06);
+    expect(xs.at(-1)).toBeCloseTo(0.8, 2);
+    expect(looks.at(-1)!.w).toBeCloseTo(1, 2);
+  });
+
+  it('hands the head back to wandering smoothly when the point goes, and then lets go', () => {
+    const g = new Gaze();
+    run(g, [0.5, 0.5], 1);
+    const back = run(g, null, 2);
+    const ws = back.map((l) => l?.w ?? 0);
+    for (let i = 1; i < ws.length; i++) expect(ws[i - 1] - ws[i]).toBeLessThan(0.06);
+    expect(ws[12]).toBeGreaterThan(0.5);
+    expect(back.at(-1)).toBeNull();
+  });
+
+  it('darts a little about a resting point, the same way for the same seed, and holds still on a moving one', () => {
+    const rest = (seed: number) => {
+      const g = new Gaze(seed);
+      run(g, [0.3, -0.2], 1);
+      return run(g, [0.3, -0.2], 5).map((l) => [l!.x, l!.y]);
+    };
+    const a = rest(7);
+    expect(a).toEqual(rest(7));
+    expect(a).not.toEqual(rest(8));
+    const off = a.map(([x, y]) => Math.hypot(x - 0.3, y + 0.2));
+    expect(Math.max(...off)).toBeGreaterThan(0.03);
+    expect(Math.max(...off)).toBeLessThan(0.15);
+    // a point that keeps moving gets no darts: the eyes trail it closely
+    const g = new Gaze(7);
+    for (let i = 0; i < 300; i++) {
+      const p: [number, number] = [0.5 * Math.cos(i / 30), 0.5 * Math.sin(i / 30)];
+      const l = g.step(p, 1 / 60)!;
+      if (i > 60) expect(Math.hypot(l.x - p[0], l.y - p[1])).toBeLessThan(0.12);
+    }
+  });
+
+  it('blinks on a long turn and not on a short one', () => {
+    const shut = (to: [number, number]) => {
+      const g = new Gaze();
+      run(g, [-0.7, 0], 1.5);
+      let least = 1;
+      for (let i = 0; i < 30; i++) {
+        g.step(to, 1 / 60);
+        least = Math.min(least, g.open);
+      }
+      return least;
+    };
+    expect(shut([0.7, 0])).toBeLessThan(0.6);
+    expect(shut([-0.5, 0.1])).toBe(1);
+  });
+
+  it('turns the eyes toward the spot, whatever way the expression looked, inside the body and apart', () => {
+    for (const shape of SHAPES) {
+      for (const expression of EXPRESSIONS) {
+        const s = state({ shape, expression, cycle: [{ anim: 'idle', dur: 4.8 }] });
+        const at = (x: number, y: number) => frame(s, 0, { look: { x, y, w: 1 } });
+        if (shape === 'circle') {
+          expect(mid(at(0.95, 0))[0] - mid(at(-0.95, 0))[0], expression).toBeGreaterThan(0.6 * RADIUS);
+          expect(mid(at(0, 0.95))[1] - mid(at(0, -0.95))[1], expression).toBeGreaterThan(0.5 * RADIUS);
+        }
+        for (let k = 0; k < 8; k++) {
+          const m = at(0.99 * Math.cos((k * Math.PI) / 4), 0.99 * Math.sin((k * Math.PI) / 4));
+          const [a, b] = m.eyes;
+          for (const e of m.eyes) {
+            expect(e.alpha, `${shape} ${expression} ${k}`).toBeGreaterThan(0.99);
+            for (let i = 0; i < e.c.x.length; i++) expect(inside(m.body.c, e.c.x[i], e.c.y[i]), `${shape} ${expression} ${k}`).toBe(true);
+          }
+          for (let i = 0; i < a.c.x.length; i++) expect(inside(b.c, a.c.x[i], a.c.y[i]) || inside(a.c, b.c.x[i], b.c.y[i]), `${shape} ${expression} ${k}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('a look with no weight is the wandering head, and a look in between is in between', () => {
+    const s = state({ cycle: [{ anim: 'idle', dur: 4.8 }] });
+    expect(toSvgString(frame(s, 1.3, { look: { x: 0.6, y: 0.4, w: 0 } }))).toBe(toSvgString(frame(s, 1.3)));
+    const [x0] = mid(frame(s, 1.3));
+    const [x1] = mid(frame(s, 1.3, { look: { x: -0.9, y: 0, w: 1 } }));
+    const [xh] = mid(frame(s, 1.3, { look: { x: -0.9, y: 0, w: 0.5 } }));
+    expect(xh).toBeLessThan(x0);
+    expect(xh).toBeGreaterThan(x1);
+    // held still, nothing follows
+    expect(toSvgString(frame(s, 1.3, { still: true, look: { x: 0.6, y: 0.4, w: 1 } }))).toBe(toSvgString(frame(s, 1.3, { still: true })));
   });
 });
 
