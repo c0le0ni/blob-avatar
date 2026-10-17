@@ -67,6 +67,8 @@
   --pulse-shadow-xl: 0 24px 64px oklch(0 0 0 / 60%), 0 4px 12px oklch(0 0 0 / 40%), 0 0 0 1px oklch(1 0 0 / 6%);
   --pulse-shadow-lift: 0 0 0 1px oklch(1 0 0 / 10%), 0 1px 1px oklch(0 0 0 / 40%), 0 2px 6px oklch(0 0 0 / 50%), inset 0 1px 0 oklch(1 0 0 / 12%);
   --pulse-shadow-card: 0 1px 2px oklch(0 0 0 / 40%), inset 0 1px 0 oklch(1 0 0 / 5%);
+  --pulse-scrollbar: oklch(1 0 0 / 16%);
+  --pulse-scrollbar-hover: oklch(1 0 0 / 30%);
   --motion-fast: 120ms;
   --motion-normal: 180ms;
   --motion-slow: 280ms;
@@ -95,6 +97,8 @@
   --pulse-accent-soft: oklch(0 0 0 / 7%);
   --pulse-ring: oklch(0.3 0.008 260);
   --pulse-selection: oklch(0 0 0 / 14%);
+  --pulse-scrollbar: oklch(0 0 0 / 18%);
+  --pulse-scrollbar-hover: oklch(0 0 0 / 34%);
   --pulse-danger: oklch(0.55 0.2 27);
   --pulse-shadow-xs: 0 1px 2px oklch(0 0 0 / 6%);
   --pulse-shadow-sm: 0 1px 3px oklch(0 0 0 / 8%), 0 1px 2px oklch(0 0 0 / 5%);
@@ -267,6 +271,36 @@
   }
   ::selection {
     background: var(--pulse-selection);
+  }
+  /* The ecosystem's scrollbar: a slim pill on a clear track, no arrows, the same in
+     every Coleoni product. Pointer screens only; a phone keeps the system's own bar.
+     Chrome, Edge and Safari draw the pill; Firefox, which has no pseudo-elements,
+     gets the thin bar in the same colors. */
+  @media (hover: hover) and (pointer: fine) {
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      border: 3px solid transparent;
+      border-radius: 999px;
+      background: var(--pulse-scrollbar) padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover,
+    ::-webkit-scrollbar-thumb:active {
+      border-width: 2px;
+      background-color: var(--pulse-scrollbar-hover);
+    }
+    @supports not selector(::-webkit-scrollbar) {
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--pulse-scrollbar) transparent;
+      }
+    }
   }
   :focus-visible {
     outline: 2px solid var(--pulse-ring);
