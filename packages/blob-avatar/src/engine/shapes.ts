@@ -8,12 +8,12 @@ import { TAU } from './math';
 
 export const BODY_POINTS = 56;
 
-/** in three rows: round, geometric, organic */
-export const SHAPES = ['circle', 'pebble', 'squircle', 'capsule', 'triangle', 'diamond', 'hexagon', 'star', 'cloud', 'droplet', 'heart', 'ghost'] as const;
+/** in rows of four: round, geometric, organic, creatures, then the rest */
+export const SHAPES = ['circle', 'pebble', 'squircle', 'capsule', 'triangle', 'diamond', 'hexagon', 'star', 'cloud', 'droplet', 'heart', 'ghost', 'cat', 'bear', 'bunny', 'amoeba', 'flower', 'clover', 'leaf', 'gem', 'bubble'] as const;
 export type Shape = (typeof SHAPES)[number];
 
 /** outlines only animations use */
-export const FIGURES = ['egg', 'hexa', 'play', 'stem'] as const;
+export const FIGURES = ['egg', 'hexa', 'play', 'stem', 'check', 'hook'] as const;
 export type Figure = Shape | (typeof FIGURES)[number];
 
 // ---------------------------------------------------------------- outline helpers
@@ -123,6 +123,96 @@ function ghostOutline(r: number, top: number, hem: number, amp: number): Pt[] {
   return pts;
 }
 
+/** a circle as a dense outline */
+const ring = (cx: number, cy: number, r: number, n = 360): Pt[] => Array.from({ length: n }, (_, i) => [cx + r * Math.sin((i / n) * TAU), cy - r * Math.cos((i / n) * TAU)] as Pt);
+
+/** an outline turned by `a` radians (clockwise on screen) around the origin, then moved */
+const place = (pts: Pt[], a: number, dx = 0, dy = 0): Pt[] => pts.map(([x, y]) => [x * Math.cos(a) - y * Math.sin(a) + dx, x * Math.sin(a) + y * Math.cos(a) + dy] as Pt);
+
+/**
+ * A thick line along a path, as an outline: both sides offset by half the width
+ * (mitred at the bends) and a round cap at each end.
+ */
+function stroke(path: Pt[], half: number, cap = 24): Pt[] {
+  const n = path.length;
+  const side = (sign: number) =>
+    path.map((p, i) => {
+      const a = path[Math.max(0, i - 1)], b = path[Math.min(n - 1, i + 1)];
+      // the normal at a point: the average of its two segments', stretched at a bend so the width holds
+      const n1 = norm(i > 0 ? [p[1] - a[1], a[0] - p[0]] : [b[1] - p[1], p[0] - b[0]]);
+      const n2 = norm(i < n - 1 ? [b[1] - p[1], p[0] - b[0]] : n1);
+      const m = norm([n1[0] + n2[0], n1[1] + n2[1]]);
+      const k = half / Math.max(0.35, m[0] * n1[0] + m[1] * n1[1]);
+      return [p[0] + sign * m[0] * k, p[1] + sign * m[1] * k] as Pt;
+    });
+  const left = side(1), right = side(-1).reverse();
+  const arc = (c: Pt, from: Pt): Pt[] => {
+    const a0 = Math.atan2(from[1] - c[1], from[0] - c[0]);
+    return Array.from({ length: cap }, (_, i) => [c[0] + half * Math.cos(a0 + (Math.PI * (i + 1)) / (cap + 1)), c[1] + half * Math.sin(a0 + (Math.PI * (i + 1)) / (cap + 1))] as Pt);
+  };
+  return [...left, ...arc(path[n - 1], left[n - 1]), ...right, ...arc(path[0], right[n - 1])];
+}
+const norm = (v: Pt): Pt => {
+  const l = Math.hypot(v[0], v[1]) || 1;
+  return [v[0] / l, v[1] / l];
+};
+
+// Shapes made of parts (a head and ears, petals, a bubble and its tail) are distance
+// fields joined smoothly, so every crease between two parts gets a real fillet,
+// and the outline is traced along rays from the center.
+
+/** how far a point is outside a shape (negative inside) */
+type Field = (x: number, y: number) => number;
+
+const disk = (cx: number, cy: number, r: number): Field => (x, y) => Math.hypot(x - cx, y - cy) - r;
+
+/** a capsule: a segment from (ax, ay) to (bx, by), r around it */
+const pill = (ax: number, ay: number, bx: number, by: number, r: number): Field => (x, y) => {
+  const ex = bx - ax, ey = by - ay, wx = x - ax, wy = y - ay;
+  const t = Math.max(0, Math.min(1, (wx * ex + wy * ey) / (ex * ex + ey * ey)));
+  return Math.hypot(wx - ex * t, wy - ey * t) - r;
+};
+
+/** a polygon grown by r all round, so its corners are arcs of radius r */
+const grown = (v: Pt[], r: number): Field => (x, y) => {
+  let d = Infinity, inside = false;
+  for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+    const [ax, ay] = v[j], [bx, by] = v[i];
+    const ex = bx - ax, ey = by - ay, wx = x - ax, wy = y - ay;
+    const t = Math.max(0, Math.min(1, (wx * ex + wy * ey) / (ex * ex + ey * ey)));
+    d = Math.min(d, Math.hypot(wx - ex * t, wy - ey * t));
+    if (ay > y !== by > y && x < ((bx - ax) * (y - ay)) / (by - ay) + ax) inside = !inside;
+  }
+  return (inside ? -d : d) - r;
+};
+
+/** the parts as one, each crease between two of them rounded over about k */
+const joined = (k: number, ...parts: Field[]): Field => (x, y) =>
+  parts.reduce((a, f) => {
+    const b = f(x, y);
+    const h = Math.max(k - Math.abs(a - b), 0) / k;
+    return Math.min(a, b) - (h * h * k) / 4;
+  }, Infinity);
+
+/** the outline of a field, as seen from the origin: along each ray, the last point inside */
+const traced = (f: Field) =>
+  polar((a) => {
+    const dx = Math.sin(a), dy = -Math.cos(a);
+    let r = 1.8;
+    while (r > 0 && f(r * dx, r * dy) > 0) r -= 0.01;
+    let lo = r, hi = r + 0.01;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (f(mid * dx, mid * dy) > 0) hi = mid;
+      else lo = mid;
+    }
+    return lo;
+  }, 1440);
+
+/** the heads of the shapes with ears, where the eyes go */
+const catHead = () => ring(0, 0.15, 0.95);
+const bunnyHead = () => ring(0, 0.32, 0.82);
+
 // ---------------------------------------------------------------- the outlines
 
 const OUTLINES: Record<Figure, () => Pt[]> = {
@@ -147,6 +237,24 @@ const OUTLINES: Record<Figure, () => Pt[]> = {
   heart: () => heartCurve(2.5, 0.062, 4, 8),
   // a dome, straight sides and a hem with three scallops
   ghost: () => ghostOutline(0.86, -0.13, 0.77, 0.2),
+  // a round head with two pointed ears
+  cat: () => traced(joined(0.09, disk(0, 0.15, 0.95), grown([[-0.66, -0.36], [-0.76, -0.94], [-0.26, -0.68]], 0.09), grown([[0.66, -0.36], [0.76, -0.94], [0.26, -0.68]], 0.09))),
+  // a round head with two round ears
+  bear: () => traced(joined(0.14, disk(0, 0.15, 0.95), disk(-0.68, -0.6, 0.33), disk(0.68, -0.6, 0.33))),
+  // a round head with two long ears, leaning out
+  bunny: () => traced(joined(0.14, disk(0, 0.32, 0.82), pill(-0.27, -0.16, -0.4, -0.8, 0.18), pill(0.27, -0.16, 0.4, -0.8, 0.18))),
+  // six round petals around a round middle
+  flower: () => traced(joined(0.1, disk(0, 0, 0.74), ...Array.from({ length: 6 }, (_, i) => disk(0.66 * Math.sin((i * TAU) / 6), -0.66 * Math.cos((i * TAU) / 6), 0.4)))),
+  // a speech bubble: a soft square with a tail at the bottom left
+  bubble: () => traced(joined(0.14, grown([[-0.52, -0.34], [0.52, -0.34], [0.52, 0.24], [-0.52, 0.24]], 0.48), grown([[-0.7, 0.36], [-0.3, 0.6], [-0.76, 1.04]], 0.06))),
+  // an amoeba: a blob with soft uneven lobes
+  amoeba: () => polar((a) => 0.93 + 0.075 * Math.cos(2 * a + 0.7) + 0.065 * Math.sin(3 * a + 0.2) + 0.035 * Math.cos(5 * a + 1.3)),
+  // a cut gem: flat top, slanted shoulders, a point at the bottom
+  gem: () => roundedPolygon([[-0.56, -0.88], [0.56, -0.88], [1.06, -0.3], [0, 1.08], [-1.06, -0.3]], 0.16),
+  // four round leaves
+  clover: () => traced(joined(0.12, disk(-0.43, -0.43, 0.53), disk(0.43, -0.43, 0.53), disk(0.43, 0.43, 0.53), disk(-0.43, 0.43, 0.53))),
+  // a leaf: two arcs meeting in points, leaning to the right
+  leaf: () => place([...ring(0.36, 0, 1.11, 720).filter(([x]) => x <= 0.001), ...ring(-0.36, 0, 1.11, 720).filter(([x]) => x >= -0.001)].sort((p, q) => Math.atan2(p[0], -p[1]) - Math.atan2(q[0], -q[1])), 0.55),
   egg: () => polar(series([0.8993, -0.0294, -0.0022, 0.0888, -0.0056, 0.0221, -0.0024, 0.013, -0.0016])),
   // a hexagon standing on a corner
   hexa: () => roundedPolygon(regular(6, 1.0483, -0.0273), 0.3179),
@@ -154,6 +262,10 @@ const OUTLINES: Record<Figure, () => Pt[]> = {
   play: () => roundedPolygon(regular(3, 1.3965, 0.104).map(([x, y]) => [x, y * 1.0083] as Pt), 0.277),
   // the stem of a "!": round, wider at the top
   stem: () => taper(0.131, 0.085, 0.84),
+  // a check mark, thick and round at the ends
+  check: () => stroke([[-0.7, -0.02], [-0.22, 0.46], [0.74, -0.52]], 0.21),
+  // the hook of a "?": most of a circle, then a short drop
+  hook: () => stroke([...Array.from({ length: 28 }, (_, i) => { const a = -2.5 + (i / 27) * 3.6; return [0.4 * Math.cos(a), -0.3 + 0.4 * Math.sin(a)] as Pt; }), [0.02, 0.28]], 0.17),
 };
 
 /** where each outline starts: the top, or where it crosses the vertical axis (shapes with two tops) */
@@ -166,7 +278,16 @@ const START: Partial<Record<Figure, 'axis'>> = { heart: 'axis' };
  */
 const DROP: Partial<Record<Figure, number>> = { heart: 0.09 };
 
+/** shapes whose face is only part of them (a head with ears): the eyes fit in that part */
+const FACE: Partial<Record<Shape, () => Pt[]>> = { cat: catHead, bear: catHead, bunny: bunnyHead };
+
+/** how big the face is beside the circle's: the eyes are drawn that much smaller, so a small head keeps its eyes in proportion */
+const FACE_SIZE: Partial<Record<Shape, number>> = { cat: 0.95, bear: 0.95, bunny: 0.82 };
+export const faceSize = (shape: Shape) => FACE_SIZE[shape] ?? 1;
+
 const cache = new Map<Figure, Contour>();
+/** how far each outline was moved to center it on its box */
+const offsets = new Map<Figure, Pt>();
 
 /** a shape's or figure's contour, centered on its box */
 export function shapeContour(fig: Figure): Contour {
@@ -180,17 +301,32 @@ export function shapeContour(fig: Figure): Contour {
     c.y[i] -= cy;
   }
   cache.set(fig, c);
+  offsets.set(fig, [cx, cy]);
+  return c;
+}
+
+/** the part of a shape the eyes fit in, in the shape's own place: the whole shape, or its head */
+export function faceContour(shape: Shape): Contour {
+  const head = FACE[shape];
+  if (!head) return shapeContour(shape);
+  shapeContour(shape);
+  const [cx, cy] = offsets.get(shape)!;
+  const c = resample(head(), BODY_POINTS);
+  for (let i = 0; i < BODY_POINTS; i++) {
+    c.x[i] -= cx;
+    c.y[i] -= cy;
+  }
   return c;
 }
 
 const RAYS = 128;
 const reach = new Map<Shape, Float64Array>();
 
-/** how far the shape's edge is from its center along an angle (0 = up, clockwise), in body radii */
+/** how far the edge of the shape's face is from its center along an angle (0 = up, clockwise), in body radii */
 export function edgeAt(shape: Shape, angle: number): number {
   let table = reach.get(shape);
   if (!table) {
-    const c = shapeContour(shape);
+    const c = faceContour(shape);
     const n = c.x.length;
     table = new Float64Array(RAYS);
     for (let i = 0; i < RAYS; i++) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, cloneState, type Clip } from 'blob-avatar/engine';
+import { DEFAULT_DUR, DEFAULT_STATE, MAX_CLIPS, PALETTE, cloneState, type Clip } from 'blob-avatar/engine';
+import { STRINGS } from '../src/i18n/strings';
 import { hexToHsv, hsvToHex, normalizeHex } from '../src/ui/color';
 import { addClip, clampDur, duplicateClip, insertClip, moveClip, removeClip, resizeClip, sameClips, starts, tellingMoment } from '../src/ui/cycles';
 import { FULL_VIEW, animThumb, embedCode } from '../src/ui/site';
@@ -7,6 +8,13 @@ import { EVENTS, count, oneViewPerVisit } from '../src/lib/count';
 import { STAGE_CLASS, stillRule } from '../src/ui/recording';
 
 describe('color picker', () => {
+  it('offers eighteen swatches, each its own color, each named in both languages', () => {
+    expect(PALETTE).toHaveLength(18);
+    expect(new Set(PALETTE.map((p) => p.hex)).size).toBe(18);
+    expect(new Set(PALETTE.map((p) => p.id)).size).toBe(18);
+    for (const p of PALETTE) for (const S of [STRINGS.en, STRINGS.pt]) expect(S.palette[p.id], p.id).toMatch(/\S/);
+  });
+
   it('reads typed colors in every usual spelling and refuses the rest', () => {
     expect(normalizeHex('#AEFA0E')).toBe('#aefa0e');
     expect(normalizeHex('aefa0e')).toBe('#aefa0e');

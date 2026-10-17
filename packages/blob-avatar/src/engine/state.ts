@@ -1,7 +1,7 @@
 // What an avatar is: everything a person picks, and nothing else. The whole avatar
 // fits in a short link (see codec.ts) and the same state always draws the same blob.
 
-import { ANIMS, DEFAULT_DUR, type Anim } from './animations';
+import { ANIMS, CLASSIC_ANIMS, DEFAULT_DUR, type Anim } from './animations';
 import { EXPRESSIONS, type Expression } from './face';
 import { SHAPES, type Shape } from './shapes';
 
@@ -39,12 +39,23 @@ export const PALETTE = [
   { id: 'pink', hex: '#e152b0' },
   { id: 'grey', hex: '#a3a3a3' },
   { id: 'cream', hex: '#f1efe9' },
+  { id: 'coral', hex: '#ff7f6a' },
+  { id: 'sand', hex: '#e8c99b' },
+  { id: 'forest', hex: '#2f7d4f' },
+  { id: 'mint', hex: '#7ee0b5' },
+  { id: 'sky', hex: '#8fd3ff' },
+  { id: 'lavender', hex: '#c7b2ff' },
 ] as const;
 
 export const MAX_CLIPS = 24;
 
-/** every animation once, in the order of the list */
-export const DEFAULT_CYCLE: Clip[] = ANIMS.map((anim) => ({ anim, dur: DEFAULT_DUR[anim] }));
+/**
+ * What an avatar plays when it names no animation (the embed, the React component,
+ * a new editor): the fourteen classic animations once, in their order. It stays
+ * those fourteen as animations are added, so an avatar already on a page keeps
+ * moving the way it did.
+ */
+export const DEFAULT_CYCLE: Clip[] = CLASSIC_ANIMS.map((anim) => ({ anim, dur: DEFAULT_DUR[anim] }));
 
 /** what the editor plays while you customize: just breathing and looking around */
 export const IDLE_CYCLE: Clip[] = [{ anim: 'idle', dur: 4.8 }];

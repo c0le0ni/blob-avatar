@@ -27,7 +27,7 @@ export interface BlobAvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
   expression?: Expression;
   /**
    * the cycle, played in order and looped: `"idle.2.4,wink.1.6"` as in the share link, or a list of clips
-   * @default every animation once
+   * @default the fourteen classic animations once
    */
   animation?: string | Clip[];
   /**

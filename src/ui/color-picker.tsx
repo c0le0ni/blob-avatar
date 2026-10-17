@@ -151,7 +151,7 @@ const SWATCH = cn(
 );
 
 /**
- * The twelve colors and a way to any other. A drag in the picker or a walk with the
+ * The eighteen colors and a way to any other. A drag in the picker or a walk with the
  * arrows comes with a key, so it makes one undo step.
  */
 export function ColorSwatches({ value, onChange, S }: { value: string; onChange: (hex: string, key?: string) => void; S: Strings }) {

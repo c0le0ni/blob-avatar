@@ -6,7 +6,7 @@
 
 import { DEFAULT_CYCLE, DEFAULT_DUR, MAX_CLIPS, SHOW_AT, type Anim, type Clip } from 'blob-avatar/engine';
 
-/** the template with every animation once, the one a new page opens with */
+/** the classic template: the fourteen first animations once, the cycle a new page opens with */
 export const ALL = 'all';
 /** the choice in the cycle menu that starts a new cycle */
 export const NEW = 'new';
@@ -19,7 +19,7 @@ export interface SavedCycle {
   clips: Clip[];
 }
 
-export type TemplateKey = 'all' | 'hello' | 'notify' | 'thinking' | 'sleepy' | 'show';
+export type TemplateKey = 'all' | 'hello' | 'notify' | 'thinking' | 'sleepy' | 'show' | 'reactions' | 'status';
 
 export interface Template {
   /** template ids have a colon, which the person's ids (uid) never do; "all" is older than that */
@@ -38,6 +38,8 @@ export const TEMPLATES: readonly Template[] = [
   { id: 'tpl:thinking', key: 'thinking', clips: [clip('idle', 1.4), clip('thinking'), clip('wide', 1.4), clip('exclaim', 1.6)] },
   { id: 'tpl:sleepy', key: 'sleepy', clips: [clip('idle', 2.4), clip('sleep', 4.8)] },
   { id: 'tpl:show', key: 'show', clips: [clip('play', 1.8), clip('orbit', 3), clip('comet', 2.2), clip('burst')] },
+  { id: 'tpl:reactions', key: 'reactions', clips: [clip('idle', 1.2), clip('nod'), clip('shake'), clip('love', 1.8), clip('party')] },
+  { id: 'tpl:status', key: 'status', clips: [clip('loading'), clip('check'), clip('idle', 1.2), clip('question')] },
 ];
 
 export const templateOf = (id: string) => TEMPLATES.find((t) => t.id === id) ?? null;
@@ -152,7 +154,7 @@ export function pickCycle(b: Book, id: string, newId = uid): { book: Book; clips
   return clips ? { book: { ...b, active: id }, clips } : null;
 }
 
-/** delete one of the person's cycles; when it is the one on screen, "every animation" comes back */
+/** delete one of the person's cycles; when it is the one on screen, the classic cycle comes back */
 export function dropCycle(b: Book, id = b.active): { book: Book; clips: Clip[] | null } {
   if (!b.saved.some((c) => c.id === id)) return { book: b, clips: null };
   const saved = b.saved.filter((c) => c.id !== id);

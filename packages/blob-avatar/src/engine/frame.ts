@@ -8,7 +8,7 @@ import { blendFace, eyeOutline, faceCenter, FACES, turnEye, turnTo, type EyePose
 import { disc, EYE_POINTS } from './glyphs';
 import { clamp, lerp, smooth } from './math';
 import { blink, breath, mixMotion, sequenceAt, toMotion, wander } from './motion';
-import { edgeAt, shapeContour } from './shapes';
+import { edgeAt, faceSize, shapeContour } from './shapes';
 import { loopLength, type BlobState } from './state';
 
 /** the drawing area: viewBox -100 -100 200 200 */
@@ -212,8 +212,12 @@ export function frame(state: BlobState, t: number, input: FrameInput = {}): Rend
   const open = (still ? 1 : blink(t, state.seed, L)) * (1 - clamp(m.shut, 0, 1)) * clamp(input.open ?? 1, 0, 1);
   const eyeFill = autoEyeColor(state.color);
 
+  // a small head draws its eyes smaller; figures place and size their own
+  const eyeSize = lerp(faceSize(state.shape), 1, figured);
   const fitted = (p: EyePose): Fitted => {
-    const { pose, z } = turnEye(p, yaw, pitch);
+    const turned = turnEye(p, yaw, pitch);
+    const z = turned.z;
+    const pose = eyeSize === 1 ? turned.pose : { ...turned.pose, w: turned.pose.w * eyeSize, h: turned.pose.h * eyeSize };
     // on other shapes the face spreads to their edge: the eye keeps its direction from
     // the center and its distance follows the edge; figures already place their eyes
     const r = Math.hypot(pose.x, pose.y);

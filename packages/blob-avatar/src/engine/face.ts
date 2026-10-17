@@ -16,6 +16,7 @@ import { clamp, lerp } from './math';
 export const EXPRESSIONS = [
   'neutral', 'attentive', 'focused', 'surprised', 'excited', 'happy', 'laughing', 'wink', 'angry', 'sad',
   'worried', 'scared', 'suspicious', 'confused', 'curious', 'proud', 'smug', 'shy', 'unimpressed', 'sleepy',
+  'pleading', 'determined', 'tired', 'crosseyed', 'content', 'dreamy',
 ] as const;
 export type Expression = (typeof EXPRESSIONS)[number];
 
@@ -61,6 +62,18 @@ export const FACES: Record<Expression, Face> = {
   smug: { left: E(0.04, -0.12, 0.29, 0.14, 0.984, -0.168, 0.174, 0.979), right: E(0.479, -0.14, 0.27, 0.13, 0.873, -0.027, 0.092, 0.99) },
   shy: { left: E(-0.529, 0.265, 0.17, 0.3, 0.825, -0.054, 0.191, 0.961), right: E(-0.08, 0.209, 0.17, 0.3, 0.977, -0.171, 0.191, 0.961) },
   unimpressed: { left: E(-0.616, -0.036, 0.3, 0.12, 0.785, -0.012, -0.012, 1), right: E(-0.106, -0.037, 0.3, 0.12, 0.994, 0.008, -0.012, 1) },
+  // big, tall and glossy, looking up
+  pleading: { left: E(-0.27, -0.16, 0.36, 0.6, 0.99, 0.06, -0.06, 0.99), right: E(0.33, -0.18, 0.36, 0.6, 0.99, -0.06, 0.06, 0.99) },
+  // a squint between focused and angry, straight ahead
+  determined: { left: E(-0.22, -0.05, 0.3, 0.19, 0.93, 0.3, -0.31, 0.95), right: E(0.32, -0.06, 0.3, 0.19, 0.93, -0.3, 0.31, 0.95) },
+  // heavy, half shut, looking down, the outer ends drooping
+  tired: { left: E(-0.24, 0.14, 0.3, 0.12, 0.95, -0.24, 0.24, 0.95), right: E(0.3, 0.13, 0.3, 0.12, 0.95, 0.24, -0.24, 0.95) },
+  // both looking at the nose
+  crosseyed: { left: E(-0.13, 0.02, 0.2, 0.42, 0.97, 0.12, -0.12, 0.97), right: E(0.19, 0.02, 0.2, 0.42, 0.97, -0.12, 0.12, 0.97) },
+  // shut, calm, a little low
+  content: { left: E(-0.24, 0.07, 0.3, 0.07, 0.99, 0.06, -0.06, 0.99), right: E(0.3, 0.07, 0.3, 0.07, 0.99, -0.06, 0.06, 0.99) },
+  // half shut, looking up and to the left
+  dreamy: { left: E(-0.5, -0.36, 0.26, 0.14, 0.86, 0.12, 0.3, 0.9), right: E(-0.02, -0.42, 0.26, 0.14, 0.97, 0.05, 0.3, 0.9) },
   // the same eyes as attentive, nearly shut
   sleepy: { left: E(-0.178, 0.163, 0.2, 0.42, 0.983, -0.001, 0.033, 0.448), right: E(0.37, 0.137, 0.2, 0.42, 0.927, -0.041, 0.033, 0.448) },
 };

@@ -1,7 +1,7 @@
 {
   "name": "blob-avatar",
   "version": "2.2.0",
-  "description": "An animated blob avatar for React and any page: 12 shapes, 20 expressions and 14 animations, drawn live as SVG.",
+  "description": "An animated blob avatar for React and any page: 21 shapes, 26 expressions and 28 animations, drawn live as SVG.",
   "license": "MIT",
   "author": "Coleoni (https://coleoni.com)",
   "homepage": "https://blob.coleoni.com",

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, RADIUS, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from 'blob-avatar/engine';
+import { ANIMS, CLASSIC_ANIMS, DEFAULT_CYCLE, DEFAULT_DUR, DEFAULT_STATE, EXPRESSIONS, POKE, RADIUS, SHAPES, envelope, frame, loopLength, cloneState, type BlobState, type RenderModel } from 'blob-avatar/engine';
 import { fromHash, fromParams, randomLook, randomState, toHash } from 'blob-avatar/engine/codec';
 import { Gaze, lookTarget } from 'blob-avatar/engine/gaze';
 import { bounds, polygonArea, resample, type Contour, type Pt } from 'blob-avatar/engine/contour';
-import { shapeContour } from 'blob-avatar/engine/shapes';
+import { faceContour, shapeContour } from 'blob-avatar/engine/shapes';
 import { toSvgString } from 'blob-avatar/render/svg';
 
 const state = (p: Partial<BlobState> = {}): BlobState => ({ ...cloneState(DEFAULT_STATE), ...p });
@@ -61,8 +61,14 @@ describe('frame', () => {
     expect(a).toBe(b);
   });
 
-  it('the default cycle has every animation once', () => {
-    expect(DEFAULT_CYCLE.map((c) => c.anim)).toEqual([...ANIMS]);
+  it('the default cycle stays the fourteen classic animations, so an avatar already on a page moves as it did', () => {
+    const classic = ['idle', 'thinking', 'wink', 'wide', 'alert', 'notification', 'exclaim', 'sleep', 'egg', 'hexagon', 'play', 'orbit', 'burst', 'comet'];
+    expect([...CLASSIC_ANIMS]).toEqual(classic);
+    expect(DEFAULT_CYCLE.map((c) => c.anim)).toEqual(classic);
+    expect(DEFAULT_CYCLE.map((c) => c.dur)).toEqual(classic.map((a) => DEFAULT_DUR[a as (typeof CLASSIC_ANIMS)[number]]));
+    // the rest come after them, every name once
+    expect(ANIMS.slice(0, classic.length)).toEqual(classic);
+    expect(new Set(ANIMS).size).toBe(ANIMS.length);
   });
 });
 
@@ -76,8 +82,8 @@ function inside(c: Contour, x: number, y: number): boolean {
 }
 
 describe('shapes', () => {
-  it('twelve shapes, all about the size of the circle, and none reaching far past it', () => {
-    expect(SHAPES).toHaveLength(12);
+  it('twenty-one shapes, all about the size of the circle, and none reaching far past it', () => {
+    expect(SHAPES).toHaveLength(21);
     for (const shape of SHAPES) {
       const c = shapeContour(shape);
       const area = polygonArea(c) / Math.PI;
@@ -100,6 +106,18 @@ describe('shapes', () => {
     expect(heart.y[0]).toBeGreaterThan(Math.min(...heart.y) + 0.1);
   });
 
+  it('puts the eyes of a shape with ears in its head, never in an ear, at rest and looking anywhere', () => {
+    for (const shape of ['cat', 'bear', 'bunny'] as const) {
+      const head = faceContour(shape);
+      for (let i = 0; i < head.x.length; i++) [head.x[i], head.y[i]] = [head.x[i] * RADIUS, head.y[i] * RADIUS];
+      for (const expression of EXPRESSIONS) {
+        const s = state({ shape, expression, cycle: [{ anim: 'idle', dur: 4.8 }] });
+        const looks = [frame(s, 0, { still: true }), ...Array.from({ length: 8 }, (_, k) => frame(s, 0, { look: { x: 0.99 * Math.cos((k * Math.PI) / 4), y: 0.99 * Math.sin((k * Math.PI) / 4), w: 1 } }))];
+        for (const m of looks) for (const e of m.eyes) for (let i = 0; i < e.c.x.length; i++) expect(inside(head, e.c.x[i], e.c.y[i]), `${shape} ${expression}`).toBe(true);
+      }
+    }
+  });
+
   it("an outline with two tops starts on one of them by default, and between them with start: 'axis'", () => {
     const twoTops: Pt[] = [[-1, -1], [-0.5, -1.2], [0, -0.8], [0.5, -1.2], [1, -1], [1, 1], [-1, 1]];
     expect(Math.abs(resample(twoTops, 24).x[0])).toBeCloseTo(0.5);
@@ -120,7 +138,8 @@ describe('shapes', () => {
         }
       }
     }
-  });
+    // every shape, expression and direction: a few seconds' work
+  }, 30_000);
 });
 
 describe('codec', () => {
@@ -153,6 +172,16 @@ describe('codec', () => {
     // nothing an object inherits passes for an old name
     const s = fromHash('#shape=constructor&expr=toString');
     expect([s.shape, s.expression]).toEqual([DEFAULT_STATE.shape, DEFAULT_STATE.expression]);
+  });
+
+  it('opens the new shapes, expressions and animations by name, and writes them back the same', () => {
+    const s = fromHash('#shape=bunny&expr=pleading&anim=nod,party.2,question&seed=k');
+    expect([s.shape, s.expression]).toEqual(['bunny', 'pleading']);
+    expect(s.cycle).toEqual([{ anim: 'nod', dur: DEFAULT_DUR.nod }, { anim: 'party', dur: 2 }, { anim: 'question', dur: DEFAULT_DUR.question }]);
+    expect(toHash(fromHash(toHash(s)))).toBe(toHash(s));
+    // and the old names still go to the nearest ones, not to a new shape
+    expect(fromHash('#shape=bean&expr=love').shape).toBe('pebble');
+    expect(fromHash('#shape=bean&expr=love').expression).toBe('happy');
   });
 
   it('opens a first-version link with what still exists', () => {
@@ -291,7 +320,8 @@ describe('gaze', () => {
         }
       }
     }
-  });
+    // every shape, expression and direction: a few seconds' work
+  }, 30_000);
 
   it('a look with no weight is the wandering head, and a look in between is in between', () => {
     const s = state({ cycle: [{ anim: 'idle', dur: 4.8 }] });

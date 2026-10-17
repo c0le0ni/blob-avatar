@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  An animated blob avatar for React and any page: 12 shapes, 20 expressions and<br>
-  14 animations, drawn live as SVG. Make yours at blob.coleoni.com, then drop it in.
+  An animated blob avatar for React and any page: 21 shapes, 26 expressions and<br>
+  28 animations, drawn live as SVG. Make yours at blob.coleoni.com, then drop it in.
 </p>
 
 <p align="center">
@@ -58,7 +58,7 @@ names, and the address bar's hash works as `state`:
 | `shape` | `Shape` | `"circle"` | The outline of the body |
 | `color` | `string` | `"#aefa0e"` | The body color: a six-digit hex color, with or without `#` |
 | `expression` | `Expression` | `"neutral"` | The face |
-| `animation` | `string \| Clip[]` | every animation once | The cycle, played in order and looped: `"idle.2.4,wink.1.6"` as in the share link, or a list of clips |
+| `animation` | `string \| Clip[]` | the fourteen classic animations once | The cycle, played in order and looped: `"idle.2.4,wink.1.6"` as in the share link, or a list of clips |
 | `seed` | `number \| string` | `1` | Changes when it blinks and where it glances: a whole number, or 1 to 6 characters of `0-9a-z` as in the share link |
 | `size` | `number \| string` | `160` | Width and height: pixels, or any CSS length |
 | `gaze` | `boolean` | `false` | The eyes follow the cursor |
@@ -69,9 +69,9 @@ names, and the address bar's hash works as `state`:
 
 | Type | |
 | --- | --- |
-| `Shape` | `circle` `pebble` `squircle` `capsule` `triangle` `diamond` `hexagon` `star` `cloud` `droplet` `heart` `ghost` |
-| `Expression` | `neutral` `attentive` `focused` `surprised` `excited` `happy` `laughing` `wink` `angry` `sad` `worried` `scared` `suspicious` `confused` `curious` `proud` `smug` `shy` `unimpressed` `sleepy` |
-| `Anim` | `idle` 2.4 s, `thinking` 2.6 s, `wink` 1.6 s, `wide` 1.8 s, `alert` 2.4 s, `notification` 2.2 s, `exclaim` 2 s, `sleep` 2.4 s, `egg` 1.8 s, `hexagon` 1.6 s, `play` 2 s, `orbit` 3.4 s, `burst` 2.6 s, `comet` 2.4 s |
+| `Shape` | `circle` `pebble` `squircle` `capsule` `triangle` `diamond` `hexagon` `star` `cloud` `droplet` `heart` `ghost` `cat` `bear` `bunny` `amoeba` `flower` `clover` `leaf` `gem` `bubble` |
+| `Expression` | `neutral` `attentive` `focused` `surprised` `excited` `happy` `laughing` `wink` `angry` `sad` `worried` `scared` `suspicious` `confused` `curious` `proud` `smug` `shy` `unimpressed` `sleepy` `pleading` `determined` `tired` `crosseyed` `content` `dreamy` |
+| `Anim` | `idle` 2.4 s, `thinking` 2.6 s, `wink` 1.6 s, `wide` 1.8 s, `alert` 2.4 s, `notification` 2.2 s, `exclaim` 2 s, `sleep` 2.4 s, `egg` 1.8 s, `hexagon` 1.6 s, `play` 2 s, `orbit` 3.4 s, `burst` 2.6 s, `comet` 2.4 s, `nod` 1.4 s, `shake` 1.4 s, `jump` 1.6 s, `spin` 1.6 s, `love` 2 s, `party` 2 s, `dizzy` 2.2 s, `shiver` 1.4 s, `melt` 2.4 s, `snooze` 2.6 s, `rain` 2.4 s, `loading` 2 s, `check` 1.8 s, `question` 2 s |
 | `Clip` | `{ anim: Anim; dur: number; }`, `dur` in seconds |
 
 <!-- props:end -->

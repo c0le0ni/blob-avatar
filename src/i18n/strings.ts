@@ -50,7 +50,7 @@ const en = {
   cycle: 'Cycle',
   cycles: 'Cycles',
   readyMade: 'Templates',
-  templates: { all: 'Every animation', hello: 'Hello', notify: 'Notify', thinking: 'Thinking', sleepy: 'Sleepy', show: 'Show' },
+  templates: { all: 'Classic', hello: 'Hello', notify: 'Notify', thinking: 'Thinking', sleepy: 'Sleepy', show: 'Show', reactions: 'Reactions', status: 'Status' },
   myCycles: 'My cycles',
   noCycles: 'Change a template and your version is kept here.',
   cycleMeta: (count: number, secs: string) => `${count} ${count === 1 ? 'animation' : 'animations'} · ${secs}`,
@@ -137,16 +137,17 @@ const en = {
   skills: 'Coleoni Skills',
   newTab: '(opens in a new tab)',
   // ------------------------------------------------------------ names
-  shapes: { circle: 'Circle', pebble: 'Pebble', squircle: 'Squircle', capsule: 'Capsule', triangle: 'Triangle', diamond: 'Diamond', hexagon: 'Hexagon', star: 'Star', cloud: 'Cloud', droplet: 'Droplet', heart: 'Heart', ghost: 'Ghost' } satisfies Record<Shape, string>,
+  shapes: { circle: 'Circle', pebble: 'Pebble', squircle: 'Squircle', capsule: 'Capsule', triangle: 'Triangle', diamond: 'Diamond', hexagon: 'Hexagon', star: 'Star', cloud: 'Cloud', droplet: 'Droplet', heart: 'Heart', ghost: 'Ghost', cat: 'Cat', bear: 'Bear', bunny: 'Bunny', flower: 'Flower', bubble: 'Bubble', amoeba: 'Amoeba', gem: 'Gem', clover: 'Clover', leaf: 'Leaf' } satisfies Record<Shape, string>,
   expressions: {
     neutral: 'Neutral', attentive: 'Attentive', focused: 'Focused', surprised: 'Surprised', excited: 'Excited', happy: 'Happy', laughing: 'Laughing', wink: 'Wink', angry: 'Angry', sad: 'Sad',
-    worried: 'Worried', scared: 'Scared', suspicious: 'Suspicious', confused: 'Confused', curious: 'Curious', proud: 'Proud', smug: 'Smug', shy: 'Shy', unimpressed: 'Unimpressed', sleepy: 'Sleepy',
+    worried: 'Worried', scared: 'Scared', suspicious: 'Suspicious', confused: 'Confused', curious: 'Curious', proud: 'Proud', smug: 'Smug', shy: 'Shy', unimpressed: 'Unimpressed', sleepy: 'Sleepy', pleading: 'Pleading', determined: 'Determined', tired: 'Tired', crosseyed: 'Cross-eyed', content: 'Content', dreamy: 'Dreamy',
   } satisfies Record<Expression, string>,
   anims: {
     idle: 'Idle', thinking: 'Thinking', wink: 'Wink', wide: 'Wide eyes', alert: 'Alert', notification: 'Notification', exclaim: 'Exclamation',
     sleep: 'Sleep', egg: 'Egg', hexagon: 'Hexagon', play: 'Play', orbit: 'Orbit', burst: 'Burst', comet: 'Comet',
+    jump: 'Jump', spin: 'Spin', nod: 'Yes', shake: 'No', love: 'Love', dizzy: 'Dizzy', melt: 'Melt', loading: 'Loading', check: 'Done', question: 'Question', snooze: 'Snooze', rain: 'Rain', party: 'Party', shiver: 'Shiver',
   } satisfies Record<Anim, string>,
-  palette: { ink: 'Ink', brown: 'Brown', red: 'Red', orange: 'Orange', amber: 'Amber', lime: 'Lime', turquoise: 'Turquoise', blue: 'Blue', purple: 'Purple', pink: 'Pink', grey: 'Grey', cream: 'Cream' } as Record<string, string>,
+  palette: { ink: 'Ink', brown: 'Brown', red: 'Red', orange: 'Orange', amber: 'Amber', lime: 'Lime', turquoise: 'Turquoise', blue: 'Blue', purple: 'Purple', pink: 'Pink', grey: 'Grey', cream: 'Cream', coral: 'Coral', sand: 'Sand', forest: 'Forest', mint: 'Mint', sky: 'Sky', lavender: 'Lavender' } as Record<string, string>,
 };
 
 export type Strings = typeof en;
@@ -193,7 +194,7 @@ const pt: Strings = {
   cycle: 'Ciclo',
   cycles: 'Ciclos',
   readyMade: 'Modelos',
-  templates: { all: 'Todas', hello: 'Olá', notify: 'Notificação', thinking: 'Pensando', sleepy: 'Sonolento', show: 'Show' },
+  templates: { all: 'Clássico', hello: 'Olá', notify: 'Notificação', thinking: 'Pensando', sleepy: 'Sonolento', show: 'Show', reactions: 'Reações', status: 'Estados' },
   myCycles: 'Meus ciclos',
   noCycles: 'Mude um modelo e a sua versão fica guardada aqui.',
   cycleMeta: (count: number, secs: string) => `${count} ${count === 1 ? 'animação' : 'animações'} · ${secs}`,
@@ -274,16 +275,17 @@ const pt: Strings = {
   github: 'GitHub',
   skills: 'Coleoni Skills',
   newTab: '(abre em outra aba)',
-  shapes: { circle: 'Círculo', pebble: 'Seixo', squircle: 'Quadrado', capsule: 'Cápsula', triangle: 'Triângulo', diamond: 'Losango', hexagon: 'Hexágono', star: 'Estrela', cloud: 'Nuvem', droplet: 'Gota', heart: 'Coração', ghost: 'Fantasma' },
+  shapes: { circle: 'Círculo', pebble: 'Seixo', squircle: 'Quadrado', capsule: 'Cápsula', triangle: 'Triângulo', diamond: 'Losango', hexagon: 'Hexágono', star: 'Estrela', cloud: 'Nuvem', droplet: 'Gota', heart: 'Coração', ghost: 'Fantasma', cat: 'Gato', bear: 'Urso', bunny: 'Coelho', flower: 'Flor', bubble: 'Balão', amoeba: 'Ameba', gem: 'Gema', clover: 'Trevo', leaf: 'Folha' },
   expressions: {
     neutral: 'Neutro', attentive: 'Atento', focused: 'Concentrado', surprised: 'Surpreso', excited: 'Animado', happy: 'Feliz', laughing: 'Rindo', wink: 'Piscando', angry: 'Bravo', sad: 'Triste',
-    worried: 'Preocupado', scared: 'Assustado', suspicious: 'Desconfiado', confused: 'Confuso', curious: 'Curioso', proud: 'Orgulhoso', smug: 'Convencido', shy: 'Tímido', unimpressed: 'Indiferente', sleepy: 'Sonolento',
+    worried: 'Preocupado', scared: 'Assustado', suspicious: 'Desconfiado', confused: 'Confuso', curious: 'Curioso', proud: 'Orgulhoso', smug: 'Convencido', shy: 'Tímido', unimpressed: 'Indiferente', sleepy: 'Sonolento', pleading: 'Pidão', determined: 'Determinado', tired: 'Cansado', crosseyed: 'Vesgo', content: 'Contente', dreamy: 'Sonhador',
   },
   anims: {
     idle: 'Parado', thinking: 'Pensando', wink: 'Piscadinha', wide: 'Olhos abertos', alert: 'Alerta', notification: 'Notificação', exclaim: 'Exclamação',
     sleep: 'Dormindo', egg: 'Ovo', hexagon: 'Hexágono', play: 'Play', orbit: 'Órbita', burst: 'Explosão', comet: 'Cometa',
+    jump: 'Pulo', spin: 'Giro', nod: 'Sim', shake: 'Não', love: 'Amor', dizzy: 'Tonto', melt: 'Derreter', loading: 'Carregando', check: 'Feito', question: 'Dúvida', snooze: 'Soneca', rain: 'Chuva', party: 'Festa', shiver: 'Tremer',
   },
-  palette: { ink: 'Tinta', brown: 'Marrom', red: 'Vermelho', orange: 'Laranja', amber: 'Âmbar', lime: 'Lima', turquoise: 'Turquesa', blue: 'Azul', purple: 'Roxo', pink: 'Rosa', grey: 'Cinza', cream: 'Creme' },
+  palette: { ink: 'Tinta', brown: 'Marrom', red: 'Vermelho', orange: 'Laranja', amber: 'Âmbar', lime: 'Lima', turquoise: 'Turquesa', blue: 'Azul', purple: 'Roxo', pink: 'Rosa', grey: 'Cinza', cream: 'Creme', coral: 'Coral', sand: 'Areia', forest: 'Floresta', mint: 'Menta', sky: 'Céu', lavender: 'Lavanda' },
 };
 
 export const STRINGS = { en, pt };

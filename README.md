@@ -23,17 +23,22 @@
 
 ## What you can make
 
-- **12 shapes** in three rows: round (circle, pebble, squircle, capsule), geometric
-  (triangle, diamond, hexagon, star) and organic (cloud, droplet, heart, ghost).
-- **20 expressions**, from neutral and happy to worried, smug and sleepy.
-- **Any color:** twelve swatches, or any other with the picker (a hex field, and an
-  eyedropper where the browser has one).
-- **14 animations** in a cycle of up to 24 clips, as a row of cards under the stage:
+- **21 shapes:** round (circle, pebble, squircle, capsule), geometric (triangle,
+  diamond, hexagon, star), organic (cloud, droplet, heart, ghost), creatures (cat,
+  bear, bunny, amoeba) and more (flower, clover, leaf, gem, speech bubble).
+- **26 expressions**, from neutral and happy to worried, pleading, cross-eyed and
+  sleepy.
+- **Any color:** eighteen swatches, or any other with the picker (a hex field, and
+  an eyedropper where the browser has one).
+- **28 animations** in a cycle of up to 24 clips: the fourteen classic ones, gestures
+  (yes, no, jump, spin), moods (love, party, dizzy, shiver, melt, snooze, rain) and
+  states (loading, done, question). They sit in a row of cards under the stage:
   drag to reorder (hold a moment first on a phone), open a clip to change its length
   (0.4 to 10 seconds), loop it, copy or remove it, or do all of it from the keyboard.
   Any animation plays in its tile under the pointer before you add it. Start from
-  a template (hello, notify, thinking, sleepy, show) or from your own cycles, which
-  you can name and are kept on your device. The cycle loops without a seam.
+  a template (classic, hello, notify, thinking, sleepy, show, reactions, status) or
+  from your own cycles, which you can name and are kept on your device. The cycle
+  loops without a seam.
 - **Exports:** PNG at 256, 512 or 1024 pixels, or any size from 16 to 2048; GIF (up
   to 512 pixels, 20 frames a second); still SVG; animated SVG. Transparent or on a
   solid background, square or round. The PNG and the SVG also copy straight to the
@@ -64,10 +69,10 @@ version.
 
 | Attribute | Values | Default |
 | --- | --- | --- |
-| `shape` | `circle` `pebble` `squircle` `capsule` `triangle` `diamond` `hexagon` `star` `cloud` `droplet` `heart` `ghost` | `circle` |
+| `shape` | `circle` `pebble` `squircle` `capsule` `triangle` `diamond` `hexagon` `star` `cloud` `droplet` `heart` `ghost` `cat` `bear` `bunny` `amoeba` `flower` `clover` `leaf` `gem` `bubble` | `circle` |
 | `color` | a six-digit hex color, with or without `#` | `#aefa0e` |
-| `expression` (or `expr`) | `neutral` `attentive` `focused` `surprised` `excited` `happy` `laughing` `wink` `angry` `sad` `worried` `scared` `suspicious` `confused` `curious` `proud` `smug` `shy` `unimpressed` `sleepy` | `neutral` |
-| `animation` (or `anim`) | the cycle: up to 24 `name.seconds` items, comma separated, played in order. Names: `idle` `thinking` `wink` `wide` `alert` `notification` `exclaim` `sleep` `egg` `hexagon` `play` `orbit` `burst` `comet`. Seconds go from 0.4 to 10, one decimal; leave them out (`wink`) for the animation's own length | every animation once, in this order |
+| `expression` (or `expr`) | `neutral` `attentive` `focused` `surprised` `excited` `happy` `laughing` `wink` `angry` `sad` `worried` `scared` `suspicious` `confused` `curious` `proud` `smug` `shy` `unimpressed` `sleepy` `pleading` `determined` `tired` `crosseyed` `content` `dreamy` | `neutral` |
+| `animation` (or `anim`) | the cycle: up to 24 `name.seconds` items, comma separated, played in order. Names: `idle` `thinking` `wink` `wide` `alert` `notification` `exclaim` `sleep` `egg` `hexagon` `play` `orbit` `burst` `comet` `nod` `shake` `jump` `spin` `love` `party` `dizzy` `shiver` `melt` `snooze` `rain` `loading` `check` `question`. Seconds go from 0.4 to 10, one decimal; leave them out (`wink`) for the animation's own length | the fourteen classic ones (`idle` to `comet`) once, in this order |
 | `seed` | 1 to 6 characters of `0-9a-z`; changes when it blinks and where it glances | `1` |
 | `size` | pixels, up to 4096 (or size the element with CSS) | `160` |
 | `gaze` | no value: the eyes follow the cursor | off |
